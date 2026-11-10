@@ -456,8 +456,8 @@ function createWindow() {
     height: initialBounds.height,
     x: hasSavedPos ? initialBounds.x : undefined,
     y: hasSavedPos ? initialBounds.y : undefined,
-    minWidth: 480,
-    minHeight: 420,
+    minWidth: 360,
+    minHeight: 400,
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
@@ -475,6 +475,9 @@ function createWindow() {
       allowRunningInsecureContent: false
     }
   })
+
+  // Ensure content protection is explicitly off so screenshot tools can capture the window
+  mainWindow.setContentProtection(false)
 
   if (typeof appIcon !== 'string' && !appIcon.isEmpty()) {
     try {
@@ -557,17 +560,10 @@ function createWindow() {
   // Safety fallback: ensure window is revealed even if ready-to-show event was delayed or missed
   setTimeout(showMainWindow, 800)
 
-  // Ensure pinned topmost status sticks on Windows blur and show
+  // Ensure pinned topmost status sticks on Windows show without stealing focus on blur
   mainWindow.on('show', () => {
     const pinned = getSetting('pinned') === 'true'
     if (pinned) {
-      applyPinnedState(true)
-    }
-  })
-
-  mainWindow.on('blur', () => {
-    const pinned = getSetting('pinned') === 'true'
-    if (pinned && mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) {
       applyPinnedState(true)
     }
   })

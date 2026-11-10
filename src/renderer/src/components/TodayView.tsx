@@ -1,19 +1,21 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import {
   BookOpen,
   ChevronRight,
   Check,
   Plus,
   ExternalLink,
-  Sparkles,
   Heart,
   Play,
-  Timer
+  Timer,
+  Clock,
+  Sparkles
 } from 'lucide-react'
 import { Task, ClassItem, ActiveTab, toDateKey } from '../types'
 import { FreeTimeBanner } from './FreeTimeBanner'
 import { FaithJournalCard } from './FaithJournalCard'
 import { ExamCountdownCard } from './ExamCountdownCard'
+import { formatTaskDate, isTaskOverdue } from '../lib/dateUtils'
 
 interface TodayViewProps {
   today: Date
@@ -484,8 +486,8 @@ export function TodayView({
           ) : (
             <div className="tasks-mini-list" style={{ gap: 6 }}>
               {todaysTasks.slice(0, 5).map(t => {
-                const priorityClass = t.priority === 'high' ? 'high' : t.priority === 'low' ? 'low' : 'medium'
-                const priorityLabel = t.priority === 'high' ? 'High' : t.priority === 'low' ? 'Low' : 'Medium'
+                const timeText = formatTaskDate(t.due_date, t.due_time, today)
+                const isOverdue = isTaskOverdue(t.due_date, t.due_time, t.completed, today)
 
                 return (
                   <div
@@ -506,19 +508,22 @@ export function TodayView({
                       <span className={`task-item-title ${t.completed ? 'strikethrough' : ''}`} style={{ fontSize: 12 }}>
                         {t.title}
                       </span>
-                      <div className="task-item-submeta">
-                        {t.scheduled_time ? (
-                          <span style={{ color: 'var(--accent-purple)', fontWeight: 600 }}>⏰ {t.scheduled_time}</span>
-                        ) : (
-                          <span>Today</span>
+                      <div className="task-item-submeta" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {isOverdue && (
+                          <span style={{ color: '#f43f5e', fontWeight: 700, fontSize: 10 }}>Overdue</span>
                         )}
-                        <span>•</span>
-                        <span className={`priority-badge-pill ${priorityClass}`}>{priorityLabel}</span>
+                        <span>{timeText}</span>
+
+                        {t.priority === 'high' ? (
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#f43f5e', display: 'inline-block' }} title="High Priority" />
+                        ) : t.priority === 'low' ? (
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} title="Low Priority" />
+                        ) : null}
+
                         {t.total_time_spent_seconds && t.total_time_spent_seconds > 0 ? (
-                          <>
-                            <span>•</span>
-                            <span style={{ color: 'var(--accent-cyan)' }}>⏱ {Math.round(t.total_time_spent_seconds / 60)}m</span>
-                          </>
+                          <span style={{ color: 'var(--accent-cyan)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                            <Clock size={10} /> {Math.round(t.total_time_spent_seconds / 60)}m
+                          </span>
                         ) : null}
                       </div>
                     </div>

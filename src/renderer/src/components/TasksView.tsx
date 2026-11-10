@@ -8,10 +8,12 @@ import {
   Clock,
   Play,
   Calendar,
-  Timer
+  AlertCircle
 } from 'lucide-react'
 import { Task, toDateKey } from '../types'
 import { TaskModal } from './TaskModal'
+import { PortalMenu } from './PortalMenu'
+import { formatTaskDate, isTaskOverdue } from '../lib/dateUtils'
 
 interface TasksViewProps {
   tasks: Task[]
@@ -39,7 +41,7 @@ export function TasksView({
   const [filter, setFilter] = useState<FilterTab>('today')
   const [showTaskModal, setShowTaskModal] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
-  const [activeMenuId, setActiveMenuId] = useState<number | null>(null)
+  const [menuAnchor, setMenuAnchor] = useState<{ rect: DOMRect; task: Task } | null>(null)
 
   const todayKey = toDateKey(today)
   const tomorrow = new Date(today)
@@ -50,9 +52,9 @@ export function TasksView({
   in7Days.setDate(today.getDate() + 7)
   const in7DaysKey = toDateKey(in7Days)
 
-  // Filter tasks
+  // Filter tasks with completed sorted to bottom and overdue prioritization
   const filteredTasks = useMemo(() => {
-    return tasks.filter(t => {
+    const list = tasks.filter(t => {
       if (filter === 'completed') return t.completed === 1
       if (filter === 'today') return t.due_date === todayKey || t.due_date === null
       if (filter === 'tomorrow') return t.due_date === tomorrowKey
@@ -61,7 +63,26 @@ export function TasksView({
       }
       return true
     })
-  }, [tasks, filter, todayKey, tomorrowKey, in7DaysKey])
+
+    return list.sort((a, b) => {
+      // Completed tasks always sorted to the bottom
+      const aDone = a.completed ? 1 : 0
+      const bDone = b.completed ? 1 : 0
+      if (aDone !== bDone) return aDone - bDone
+
+      // Overdue uncompleted tasks sorted higher
+      const aOverdue = isTaskOverdue(a.due_date, a.due_time, a.completed, today)
+      const bOverdue = isTaskOverdue(b.due_date, b.due_time, b.completed, today)
+      if (aOverdue && !bOverdue) return -1
+      if (!aOverdue && bOverdue) return 1
+
+      // Then sort chronologically by date and time
+      const aDate = a.due_date || '9999-99-99'
+      const bDate = b.due_date || '9999-99-99'
+      if (aDate !== bDate) return aDate.localeCompare(bDate)
+      return (a.due_time || '').localeCompare(b.due_time || '')
+    })
+  }, [tasks, filter, todayKey, tomorrowKey, in7DaysKey, today])
 
   async function handleSaveTask(data: any) {
     if (editingTask) {
@@ -119,10 +140,8 @@ export function TasksView({
           </div>
         ) : (
           filteredTasks.map(t => {
-            const priorityClass = t.priority === 'high' ? 'high' : t.priority === 'low' ? 'low' : 'medium'
-            const priorityLabel = t.priority === 'high' ? 'High' : t.priority === 'low' ? 'Low' : 'Medium'
-            const timeText = t.due_time ? `Today ${t.due_time}` : t.due_date ? t.due_date : 'Today'
-            const isMenuOpen = activeMenuId === t.id
+            const timeText = formatTaskDate(t.due_date, t.due_time, today)
+            const isOverdue = isTaskOverdue(t.due_date, t.due_time, t.completed, today)
 
             return (
               <div
@@ -161,18 +180,18 @@ export function TasksView({
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5 }}>
                     {t.scheduled_date && (
                       <span style={{ color: 'var(--accent-purple)', fontWeight: 600 }}>
-                        ⏰ {t.scheduled_date === todayKey ? 'Today' : t.scheduled_date} {t.scheduled_time || ''}
+                        {t.scheduled_date === todayKey ? 'Today' : t.scheduled_date} {t.scheduled_time || ''}
                       </span>
                     )}
                     {t.total_time_spent_seconds && t.total_time_spent_seconds > 0 ? (
                       <span style={{ color: 'var(--accent-cyan)' }}>
-                        ⏱ {Math.round(t.total_time_spent_seconds / 60)}m studied
+                        {Math.round(t.total_time_spent_seconds / 60)}m studied
                       </span>
                     ) : null}
                   </div>
                 </div>
 
-                {/* Priority & Duration Badges */}
+                {/* Priority Dot & Duration Badges */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifySelf: 'end' }}>
                   {t.estimated_minutes ? (
                     <span
@@ -182,15 +201,54 @@ export function TasksView({
                       <Clock size={10} /> {t.estimated_minutes}m
                     </span>
                   ) : null}
-                  <span className={`priority-badge-pill ${priorityClass}`}>
-                    {priorityLabel}
-                  </span>
+
+                  {/* Priority as a clean dot for High or Low only, hidden for default Medium */}
+                  {t.priority === 'high' ? (
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        background: '#f43f5e',
+                        display: 'inline-block'
+                      }}
+                      title="High Priority"
+                    />
+                  ) : t.priority === 'low' ? (
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        background: '#10b981',
+                        display: 'inline-block'
+                      }}
+                      title="Low Priority"
+                    />
+                  ) : null}
                 </div>
 
-                {/* Due Time */}
-                <span style={{ fontSize: 11, color: 'var(--text-secondary)', justifySelf: 'end', minWidth: 70, textAlign: 'right' }}>
-                  {timeText}
-                </span>
+                {/* Due Time & Overdue Badge */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifySelf: 'end' }}>
+                  {isOverdue && (
+                    <span
+                      style={{
+                        background: 'rgba(244, 63, 94, 0.15)',
+                        color: '#f43f5e',
+                        border: '1px solid rgba(244, 63, 94, 0.3)',
+                        padding: '1px 6px',
+                        borderRadius: 4,
+                        fontSize: 10,
+                        fontWeight: 700
+                      }}
+                    >
+                      Overdue
+                    </span>
+                  )}
+                  <span style={{ fontSize: 11, color: isOverdue ? '#f43f5e' : 'var(--text-secondary)', minWidth: 70, textAlign: 'right' }}>
+                    {timeText}
+                  </span>
+                </div>
 
                 {/* Quick Action Buttons (Focus & Schedule) */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifySelf: 'end' }}>
@@ -201,6 +259,7 @@ export function TasksView({
                         style={{ width: 24, height: 24, color: 'var(--accent-purple)' }}
                         onClick={() => onOpenFocusTimer?.(t)}
                         title="Start Focus Timer"
+                        aria-label="Start Focus Timer"
                       >
                         <Play size={12} style={{ fill: 'currentColor' }} />
                       </button>
@@ -209,6 +268,7 @@ export function TasksView({
                         style={{ width: 24, height: 24 }}
                         onClick={() => onScheduleTask?.(t)}
                         title="Schedule into Slot"
+                        aria-label="Schedule into Slot"
                       >
                         <Calendar size={12} />
                       </button>
@@ -217,86 +277,87 @@ export function TasksView({
                 </div>
 
                 {/* 3-dots Menu Button */}
-                <div style={{ position: 'relative', justifySelf: 'end' }}>
+                <div style={{ justifySelf: 'end' }}>
                   <button
                     className="win-btn"
                     style={{ width: 24, height: 24 }}
-                    onClick={() => setActiveMenuId(isMenuOpen ? null : t.id)}
+                    onClick={(e) => {
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                      setMenuAnchor(menuAnchor?.task.id === t.id ? null : { rect, task: t })
+                    }}
+                    title="Task options"
+                    aria-label="Task options"
                   >
                     <MoreHorizontal size={14} color="var(--text-muted)" />
                   </button>
-
-                  {isMenuOpen && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        right: 0,
-                        top: 26,
-                        background: 'var(--bg-card)',
-                        border: '1px solid var(--border-card)',
-                        borderRadius: 8,
-                        padding: 4,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 2,
-                        zIndex: 30,
-                        minWidth: 120,
-                        boxShadow: 'var(--shadow-card)'
-                      }}
-                    >
-                      {!t.completed && (
-                        <>
-                          <button
-                            className="sidebar-nav-item"
-                            style={{ padding: '5px 8px', fontSize: 11.5 }}
-                            onClick={() => {
-                              setActiveMenuId(null)
-                              onOpenFocusTimer?.(t)
-                            }}
-                          >
-                            <Play size={11} /> Focus Timer
-                          </button>
-                          <button
-                            className="sidebar-nav-item"
-                            style={{ padding: '5px 8px', fontSize: 11.5 }}
-                            onClick={() => {
-                              setActiveMenuId(null)
-                              onScheduleTask?.(t)
-                            }}
-                          >
-                            <Calendar size={11} /> Schedule
-                          </button>
-                        </>
-                      )}
-                      <button
-                        className="sidebar-nav-item"
-                        style={{ padding: '5px 8px', fontSize: 11.5 }}
-                        onClick={() => {
-                          setActiveMenuId(null)
-                          setEditingTask(t)
-                          setShowTaskModal(true)
-                        }}
-                      >
-                        <Edit2 size={11} /> Edit
-                      </button>
-                      <button
-                        className="sidebar-nav-item"
-                        style={{ padding: '5px 8px', fontSize: 11.5, color: 'var(--priority-high-text)' }}
-                        onClick={() => {
-                          setActiveMenuId(null)
-                          onDeleteTask(t.id)
-                        }}
-                      >
-                        <Trash2 size={11} /> Delete
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
             )
           })
         )}
       </div>
+
+      {/* Task Dropdown Portal Menu with collision detection */}
+      <PortalMenu
+        isOpen={Boolean(menuAnchor)}
+        anchorRect={menuAnchor?.rect || null}
+        onClose={() => setMenuAnchor(null)}
+        minWidth={130}
+      >
+        {menuAnchor && (
+          <>
+            {!menuAnchor.task.completed && (
+              <>
+                <button
+                  className="sidebar-nav-item"
+                  style={{ padding: '6px 10px', fontSize: 11.5 }}
+                  onClick={() => {
+                    const task = menuAnchor.task
+                    setMenuAnchor(null)
+                    onOpenFocusTimer?.(task)
+                  }}
+                >
+                  <Play size={11} /> Focus Timer
+                </button>
+                <button
+                  className="sidebar-nav-item"
+                  style={{ padding: '6px 10px', fontSize: 11.5 }}
+                  onClick={() => {
+                    const task = menuAnchor.task
+                    setMenuAnchor(null)
+                    onScheduleTask?.(task)
+                  }}
+                >
+                  <Calendar size={11} /> Schedule
+                </button>
+              </>
+            )}
+            <button
+              className="sidebar-nav-item"
+              style={{ padding: '6px 10px', fontSize: 11.5 }}
+              onClick={() => {
+                const task = menuAnchor.task
+                setMenuAnchor(null)
+                setEditingTask(task)
+                setShowTaskModal(true)
+              }}
+            >
+              <Edit2 size={11} /> Edit
+            </button>
+            <button
+              className="sidebar-nav-item"
+              style={{ padding: '6px 10px', fontSize: 11.5, color: 'var(--priority-high-text)' }}
+              onClick={() => {
+                const taskId = menuAnchor.task.id
+                setMenuAnchor(null)
+                onDeleteTask(taskId)
+              }}
+            >
+              <Trash2 size={11} /> Delete
+            </button>
+          </>
+        )}
+      </PortalMenu>
 
       {/* Task Modal */}
       <TaskModal

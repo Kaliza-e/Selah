@@ -33,6 +33,7 @@ import {
 import { ScheduleEventModal } from './ScheduleEventModal'
 import { ScheduleReviewModal } from './ScheduleReviewModal'
 import { ScheduleCreatorModal } from './ScheduleCreatorModal'
+import { PortalMenu } from './PortalMenu'
 
 interface SchedulesViewProps {
   onShowMessage: (msg: string) => void
@@ -57,7 +58,7 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
   const [currentIngestion, setCurrentIngestion] = useState<ScheduleIngestionResult | null>(null)
   const [isDocsDrawerOpen, setIsDocsDrawerOpen] = useState(false)
   const [isCreatorModalOpen, setIsCreatorModalOpen] = useState(false)
-  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false)
+  const [exportAnchor, setExportAnchor] = useState<DOMRect | null>(null)
 
   // Load events and source documents
   const loadData = useCallback(async () => {
@@ -340,69 +341,72 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
             <Upload size={13} /> Import
           </button>
 
-          {/* Export Dropdown */}
-          <div style={{ position: 'relative' }}>
+          {/* Export Dropdown with Portal collision detection */}
+          <div>
             <button
               type="button"
               className="btn-secondary-pill"
-              onClick={() => setIsExportMenuOpen(prev => !prev)}
+              onClick={(e) => {
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                setExportAnchor(exportAnchor ? null : rect)
+              }}
               title="Export schedules to PDF, Excel, CSV, or iCalendar"
+              aria-label="Export schedules"
             >
               <Download size={13} /> Export
             </button>
 
-            {isExportMenuOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 36,
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--border-card)',
-                  borderRadius: 8,
-                  padding: 4,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 2,
-                  zIndex: 40,
-                  minWidth: 170,
-                  boxShadow: 'var(--shadow-card)'
+            <PortalMenu
+              isOpen={Boolean(exportAnchor)}
+              anchorRect={exportAnchor}
+              onClose={() => setExportAnchor(null)}
+              minWidth={170}
+            >
+              <button
+                type="button"
+                className="sidebar-nav-item"
+                style={{ padding: '6px 10px', fontSize: 11.5 }}
+                onClick={() => {
+                  setExportAnchor(null)
+                  handleExportPdf()
                 }}
               >
-                <button
-                  type="button"
-                  className="sidebar-nav-item"
-                  style={{ padding: '6px 10px', fontSize: 11.5 }}
-                  onClick={handleExportPdf}
-                >
-                  <FileText size={12} color="#f43f5e" /> Printable PDF (.pdf)
-                </button>
-                <button
-                  type="button"
-                  className="sidebar-nav-item"
-                  style={{ padding: '6px 10px', fontSize: 11.5 }}
-                  onClick={handleExportExcel}
-                >
-                  <FileSpreadsheet size={12} color="#10b981" /> Excel (.xlsx)
-                </button>
-                <button
-                  type="button"
-                  className="sidebar-nav-item"
-                  style={{ padding: '6px 10px', fontSize: 11.5 }}
-                  onClick={handleExportCsv}
-                >
-                  <FileDown size={12} color="#06b6d4" /> CSV Spreadsheet (.csv)
-                </button>
-                <button
-                  type="button"
-                  className="sidebar-nav-item"
-                  style={{ padding: '6px 10px', fontSize: 11.5 }}
-                  onClick={handleExportIcs}
-                >
-                  <Calendar size={12} color="#a855f7" /> iCalendar (.ics)
-                </button>
-              </div>
-            )}
+                <FileText size={12} color="#f43f5e" /> Printable PDF (.pdf)
+              </button>
+              <button
+                type="button"
+                className="sidebar-nav-item"
+                style={{ padding: '6px 10px', fontSize: 11.5 }}
+                onClick={() => {
+                  setExportAnchor(null)
+                  handleExportExcel()
+                }}
+              >
+                <FileSpreadsheet size={12} color="#10b981" /> Excel (.xlsx)
+              </button>
+              <button
+                type="button"
+                className="sidebar-nav-item"
+                style={{ padding: '6px 10px', fontSize: 11.5 }}
+                onClick={() => {
+                  setExportAnchor(null)
+                  handleExportCsv()
+                }}
+              >
+                <FileDown size={12} color="#06b6d4" /> CSV Spreadsheet (.csv)
+              </button>
+              <button
+                type="button"
+                className="sidebar-nav-item"
+                style={{ padding: '6px 10px', fontSize: 11.5 }}
+                onClick={() => {
+                  setExportAnchor(null)
+                  handleExportIcs()
+                }}
+              >
+                <Calendar size={12} color="#a855f7" /> iCalendar (.ics)
+              </button>
+            </PortalMenu>
           </div>
 
           <button

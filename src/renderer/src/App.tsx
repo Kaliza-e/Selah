@@ -24,6 +24,7 @@ import { TaskModal } from './components/TaskModal'
 import { SubjectModal } from './components/SubjectModal'
 import { FocusViewModal } from './components/FocusViewModal'
 import { ScheduleTaskModal } from './components/ScheduleTaskModal'
+import { Toast, ToastData } from './components/Toast'
 import { ScheduleCreatorModal } from './components/ScheduleCreatorModal'
 
 export default function App() {
@@ -33,8 +34,26 @@ export default function App() {
   const [pinned, setPinned] = useState(true)
   const [widgetMode, setWidgetMode] = useState<'compact' | 'standard'>('compact')
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
-  const [message, setMessage] = useState('')
+  const [toast, setToast] = useState<ToastData | null>(null)
   const [today, setToday] = useState(new Date())
+
+  const showToast = useCallback((
+    msg: string,
+    action?: { label: string; onAction: () => void },
+    durationMs = 4000
+  ) => {
+    setToast({
+      id: `${Date.now()}-${Math.random()}`,
+      message: msg,
+      action,
+      durationMs
+    })
+  }, [])
+
+  // Auto-dismiss toast when switching navigation screens
+  useEffect(() => {
+    setToast(null)
+  }, [activeTab])
 
   // Modals & Active Focus
   const [showGlobalTaskModal, setShowGlobalTaskModal] = useState(false)
@@ -48,13 +67,6 @@ export default function App() {
     subject?: string
     date?: string
   }>({ isOpen: false })
-
-  // 60-Second Undo Toast State
-  const [undoTask, setUndoTask] = useState<{
-    task: Task
-    timeSpentSeconds: number
-    timerId: any
-  } | null>(null)
 
   // Dynamic live clock ticker
   useEffect(() => {
@@ -95,7 +107,7 @@ export default function App() {
       }
     } catch (err) {
       console.error('Failed to load data:', err)
-      setMessage(`Could not load saved data. Restart ${APP_CONFIG.name} and try again.`)
+      showToast(`Could not load saved data. Restart ${APP_CONFIG.name} and try again.`, undefined, 6000)
     }
   }, [])
 
@@ -166,11 +178,30 @@ export default function App() {
 
   const handleDeleteTask = useCallback(
     async (id: number) => {
+      const taskToDelete = tasks.find(t => t.id === id)
       await window.hello11824.deleteTask(id)
       await refreshTasks()
-      setMessage('Task deleted.')
+      if (taskToDelete) {
+        showToast(`Deleted "${taskToDelete.title}"`, {
+          label: 'Undo',
+          onAction: async () => {
+            await window.hello11824.addTask({
+              title: taskToDelete.title,
+              description: taskToDelete.description || undefined,
+              dueDate: taskToDelete.due_date || undefined,
+              dueTime: taskToDelete.due_time || undefined,
+              priority: taskToDelete.priority,
+              category: taskToDelete.category || undefined,
+              estimatedMinutes: taskToDelete.estimated_minutes
+            })
+            await refreshTasks()
+          }
+        }, 5000)
+      } else {
+        showToast('Task deleted.')
+      }
     },
-    [refreshTasks]
+    [tasks, refreshTasks, showToast]
   )
 
   const handleOpenTaskForEdit = useCallback((task: Task) => {
@@ -182,24 +213,24 @@ export default function App() {
     async (taskData: any) => {
       if (editingTask) {
         await window.hello11824.updateTask(editingTask.id, taskData)
-        setMessage(`Updated "${taskData.title}"`)
+        showToast(`Updated "${taskData.title}"`)
       } else {
         await window.hello11824.addTask(taskData)
-        setMessage(`Added "${taskData.title}"`)
+        showToast(`Added "${taskData.title}"`)
       }
       setEditingTask(null)
       await refreshTasks()
     },
-    [editingTask, refreshTasks]
+    [editingTask, refreshTasks, showToast]
   )
 
   const handleCreateClass = useCallback(
     async (classData: any) => {
       await window.hello11824.addClass(classData)
       await refreshClasses()
-      setMessage(`Added "${classData.title}" to timetable.`)
+      showToast(`Added "${classData.title}" to timetable.`)
     },
-    [refreshClasses]
+    [refreshClasses, showToast]
   )
 
   const handleScheduleTaskSave = useCallback(
@@ -207,35 +238,26 @@ export default function App() {
       await window.hello11824.scheduleTask(taskId, date, time, durationMinutes)
       setSchedulingTask(null)
       await refreshTasks()
-      setMessage('Task scheduled into timetable slot.')
+      showToast('Task scheduled into timetable slot.')
     },
-    [refreshTasks]
+    [refreshTasks, showToast]
   )
 
   const handleTaskCompleted = useCallback(
     async (task: Task, timeSpentSeconds: number) => {
+      await window.hello11824.updateTask(task.id, { completed: 1 })
       await refreshTasks()
-      if (undoTask?.timerId) {
-        clearTimeout(undoTask.timerId)
-      }
-      const timerId = setTimeout(() => {
-        setUndoTask(null)
-      }, 60_000)
-      setUndoTask({ task, timeSpentSeconds, timerId })
       const mins = Math.round(timeSpentSeconds / 60)
-      setMessage(`Completed "${task.title}" (${mins}m studied).`)
+      showToast(`Completed "${task.title}" (${mins}m studied).`, {
+        label: 'Undo',
+        onAction: async () => {
+          await window.hello11824.updateTask(task.id, { completed: 0 })
+          await refreshTasks()
+        }
+      }, 5000)
     },
-    [refreshTasks, undoTask]
+    [refreshTasks, showToast]
   )
-
-  const handleUndoDone = useCallback(async () => {
-    if (!undoTask) return
-    if (undoTask.timerId) clearTimeout(undoTask.timerId)
-    await window.hello11824.undoMarkTaskDone(undoTask.task.id)
-    await refreshTasks()
-    setMessage(`Restored "${undoTask.task.title}" to active tasks.`)
-    setUndoTask(null)
-  }, [undoTask, refreshTasks])
 
   function handleOpenRevisionPlan(examSubject: string, examDate: string) {
     setScheduleCreatorParams({
@@ -290,30 +312,7 @@ export default function App() {
             </div>
           )}
 
-          {message && (
-            <div
-              style={{
-                background: 'var(--accent-purple-bg)',
-                border: '1px solid var(--border-focus)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '6px 10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontSize: 11.5,
-                color: 'var(--text-primary)'
-              }}
-            >
-              <span>{message}</span>
-              <button
-                type="button"
-                onClick={() => setMessage('')}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-              >
-                <X size={12} />
-              </button>
-            </div>
-          )}
+
 
           <TodayView
             today={today}
@@ -457,30 +456,7 @@ export default function App() {
               </div>
             )}
 
-            {message && (
-              <div
-                style={{
-                  background: 'var(--accent-purple-bg)',
-                  border: '1px solid var(--border-focus)',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: '6px 12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  fontSize: 12,
-                  color: 'var(--text-primary)'
-                }}
-              >
-                <span>{message}</span>
-                <button
-                  type="button"
-                  onClick={() => setMessage('')}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                >
-                  <X size={13} />
-                </button>
-              </div>
-            )}
+
 
             {activeTab === 'today' && (
               <TodayView
@@ -497,7 +473,7 @@ export default function App() {
                 onOpenClassModal={() => setShowGlobalClassModal(true)}
                 onOpenTaskDetails={handleOpenTaskForEdit}
                 onRefreshTasks={refreshTasks}
-                onShowMessage={setMessage}
+                onShowMessage={showToast}
                 onOpenFocusTimer={task => setFocusTask(task)}
                 onScheduleTask={task => setSchedulingTask(task)}
                 onOpenRevisionPlan={handleOpenRevisionPlan}
@@ -508,12 +484,12 @@ export default function App() {
               <TimetableManager
                 classes={classes}
                 onRefreshClasses={refreshClasses}
-                onShowMessage={setMessage}
+                onShowMessage={showToast}
               />
             )}
 
             {activeTab === 'schedules' && (
-              <SchedulesView onShowMessage={setMessage} />
+              <SchedulesView onShowMessage={showToast} />
             )}
 
             {activeTab === 'tasks' && (
@@ -523,7 +499,7 @@ export default function App() {
                 onToggleTask={handleToggleTask}
                 onDeleteTask={handleDeleteTask}
                 onRefreshTasks={refreshTasks}
-                onShowMessage={setMessage}
+                onShowMessage={showToast}
                 onOpenFocusTimer={task => setFocusTask(task)}
                 onScheduleTask={task => setSchedulingTask(task)}
               />
@@ -537,7 +513,7 @@ export default function App() {
                 onRefreshTasks={refreshTasks}
                 onToggleTask={handleToggleTask}
                 onDeleteTask={handleDeleteTask}
-                onShowMessage={setMessage}
+                onShowMessage={showToast}
                 onOpenFocusTimer={task => setFocusTask(task)}
                 onScheduleTask={task => setSchedulingTask(task)}
               />
@@ -566,7 +542,7 @@ export default function App() {
                 onRefreshAll={async () => {
                   await Promise.all([refreshTasks(), refreshClasses()])
                 }}
-                onShowMessage={setMessage}
+                onShowMessage={showToast}
               />
             )}
           </main>
@@ -599,7 +575,7 @@ export default function App() {
         onClose={() => setFocusTask(null)}
         task={focusTask}
         onTaskCompleted={handleTaskCompleted}
-        onShowMessage={setMessage}
+        onShowMessage={showToast}
       />
 
       {/* Phase 2: Schedule Task Slot Modal */}
@@ -622,15 +598,18 @@ export default function App() {
         onSaveEvents={async (newEvents) => {
           try {
             const res = await window.hello11824.batchSaveScheduleEvents({ events: newEvents })
-            setMessage(`Created ${res.savedCount || newEvents.length} events for ${scheduleCreatorParams.subject || 'schedule'}!`)
+            showToast(`Created ${res.savedCount || newEvents.length} events for ${scheduleCreatorParams.subject || 'schedule'}!`)
             setScheduleCreatorParams({ isOpen: false })
             setActiveTab('schedules')
           } catch (err) {
-            setMessage(`Error saving schedule: ${err instanceof Error ? err.message : String(err)}`)
+            showToast(`Error saving schedule: ${err instanceof Error ? err.message : String(err)}`)
           }
         }}
-        onShowMessage={setMessage}
+        onShowMessage={showToast}
       />
+
+      {/* Universal Auto-dismissing Toast with Undo action and Hover-pause */}
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>
   )
 }
