@@ -12,8 +12,8 @@ test('Cross-Platform: package.json has complete Windows, macOS, and Linux build 
   assert.ok(build, 'package.json must contain build object')
 
   // Common metadata
-  assert.equal(build.appId, 'com.hello11824.desktop')
-  assert.equal(build.productName, 'Hello 118:24')
+  assert.equal(build.appId, 'com.selah.desktop')
+  assert.equal(build.productName, 'Selah')
   assert.ok(build.asarUnpack && build.asarUnpack.includes('node_modules/better-sqlite3/**/*'))
 
   // Windows build target
@@ -35,7 +35,7 @@ test('Cross-Platform: package.json has complete Windows, macOS, and Linux build 
   assert.ok(build.linux, 'Linux configuration must exist')
   assert.equal(build.linux.category, 'Education')
   assert.ok(build.linux.desktop, 'Linux desktop entry must be configured')
-  assert.equal(build.linux.desktop.StartupWMClass, 'Hello 118:24')
+  assert.equal(build.linux.desktop.StartupWMClass, 'Selah')
   const linuxTargets = build.linux.target.map(t => t.target)
   assert.ok(linuxTargets.includes('AppImage'), 'Linux target must include AppImage')
   assert.ok(linuxTargets.includes('deb'), 'Linux target must include deb')
@@ -64,7 +64,7 @@ test('Cross-Platform: main process handles macOS menu, Windows app ID, and Linux
   const code = readFileSync(mainPath, 'utf8')
 
   // Windows AppUserModelId
-  assert.ok(code.includes("app.setAppUserModelId('com.hello11824.desktop')"), 'Main process must set Windows AppUserModelId')
+  assert.ok(code.includes('app.setAppUserModelId(APP_CONFIG.appId)'), 'Main process must set Windows AppUserModelId')
 
   // macOS application menu with Edit shortcuts
   assert.ok(code.includes("process.platform === 'darwin'"), 'Main process must detect macOS')

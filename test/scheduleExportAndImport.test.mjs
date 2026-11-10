@@ -129,7 +129,7 @@ function generateIcs(events) {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Hello 118:24//Student Planner//EN',
+    'PRODID:-//Selah//Student Planner//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH'
   ]
@@ -248,7 +248,7 @@ function generatePrintableHtml(events, options) {
 <html>
 <head><title>${escapeHtml(title)}</title><style>@page { size: A4; margin: 15mm; }</style></head>
 <body>
-  <h1>Hello 118:24</h1>
+  <h1>Selah</h1>
   <p>${escapeHtml(subtitle)}</p>
   <table><tbody>${rows}</tbody></table>
 </body>

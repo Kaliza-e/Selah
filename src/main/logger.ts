@@ -2,6 +2,8 @@ import { app, dialog } from 'electron'
 import { join } from 'node:path'
 import { existsSync, mkdirSync, appendFileSync, statSync, renameSync } from 'node:fs'
 
+import { APP_CONFIG } from '../shared/appConfig'
+
 let logFilePath: string | null = null
 let initialized = false
 
@@ -31,7 +33,7 @@ export function initLogger(userDataDir: string): void {
         logError('[UncaughtException]', err)
         if (app.isPackaged) {
           dialog.showErrorBox(
-            'Hello 118:24 - Unexpected Error',
+            `${APP_CONFIG.name} - Unexpected Error`,
             `An unexpected error occurred during execution:\n\n${err?.message || String(err)}\n\nPlease see the log file at:\n${logFilePath}`
           )
         }

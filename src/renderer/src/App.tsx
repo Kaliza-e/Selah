@@ -11,6 +11,7 @@ import {
   CalendarCheck
 } from 'lucide-react'
 import { Task, ClassItem, ActiveTab, toDateKey } from './types'
+import { APP_CONFIG } from '../../shared/appConfig'
 import { TitleBar } from './components/TitleBar'
 import { TodayView } from './components/TodayView'
 import { TimetableManager } from './components/TimetableManager'
@@ -94,7 +95,7 @@ export default function App() {
       }
     } catch (err) {
       console.error('Failed to load data:', err)
-      setMessage('Could not load saved data. Restart Hello 118:24 and try again.')
+      setMessage(`Could not load saved data. Restart ${APP_CONFIG.name} and try again.`)
     }
   }, [])
 

@@ -1,8 +1,8 @@
 {
-  "name": "hello-118-24",
+  "name": "selah",
   "version": "0.1.2",
   "private": true,
-  "description": "Hello 118:24 — A personal desktop companion for school, productivity, timetable management, and daily planning across Windows, macOS, and Linux",
+  "description": "Selah — Focused desktop planner, calendar, and companion",
   "author": "Kaliza Esther <kalizaesther5@gmail.com>",
   "license": "MIT",
   "main": "./out/main/index.js",
@@ -15,7 +15,7 @@
     "test": "electron test/runner.mjs",
     "clean": "node -e \"const fs = require('fs'); ['release', 'out'].forEach(d => { try { fs.rmSync(d, { recursive: true, force: true }); } catch {} });\"",
     "clean:win": "powershell -Command \"Remove-Item -Recurse -Force release, out -ErrorAction SilentlyContinue\"",
-    "package:win": "powershell -Command \"Get-Process -Name 'Hello 11824', 'electron' -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 300; Remove-Item -Recurse -Force release -ErrorAction SilentlyContinue; exit 0\" && npm run build && electron-builder --win nsis",
+    "package:win": "powershell -Command \"Get-Process -Name 'Selah', 'electron' -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 300; Remove-Item -Recurse -Force release -ErrorAction SilentlyContinue; exit 0\" && npm run build && electron-builder --win nsis",
     "package:mac": "npm run build && electron-builder --mac",
     "package:linux": "npm run build && electron-builder --linux",
     "package:all": "npm run build && electron-builder -mwl"
@@ -45,8 +45,8 @@
     "vite": "^6.0.7"
   },
   "build": {
-    "appId": "com.hello11824.desktop",
-    "productName": "Hello 118:24",
+    "appId": "com.selah.desktop",
+    "productName": "Selah",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -92,7 +92,7 @@
     "mac": {
       "icon": "build/icon.png",
       "category": "public.app-category.education",
-      "executableName": "Hello 11824",
+      "executableName": "Selah",
       "target": [
         {
           "target": "dmg",
@@ -151,9 +151,9 @@
         }
       ],
       "desktop": {
-        "StartupWMClass": "Hello 118:24",
-        "Name": "Hello 118:24",
-        "Comment": "Personal desktop companion for school, productivity, timetable management, and daily planning"
+        "StartupWMClass": "Selah",
+        "Name": "Selah",
+        "Comment": "Focused desktop planner, calendar, and companion"
       }
     },
     "deb": {

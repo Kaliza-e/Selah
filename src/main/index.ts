@@ -83,11 +83,12 @@ import {
   generateExcelBuffer,
   generatePrintableHtml
 } from './scheduleExport'
+import { APP_CONFIG } from '../shared/appConfig'
 
-// Set application name without illegal filesystem characters (such as ':')
-app.name = 'Hello 11824'
+// Set application name without illegal filesystem characters
+app.name = APP_CONFIG.name
 if (process.platform === 'win32') {
-  app.setAppUserModelId('com.hello11824.desktop')
+  app.setAppUserModelId(APP_CONFIG.appId)
 }
 
 let mainWindow: BrowserWindow | null = null
@@ -96,13 +97,12 @@ let isAppQuitting = false
 const isDev = !app.isPackaged
 
 // Always set an explicit, valid userData path before requesting single-instance lock
-// or initializing SQLite/Chromium storage (preventing illegal filename issues on Windows).
-const userDataPath = join(app.getPath('appData'), isDev ? 'hello-118-24-dev' : 'hello-118-24')
+const userDataPath = join(app.getPath('appData'), isDev ? APP_CONFIG.userDataDevDir : APP_CONFIG.userDataDir)
 app.setPath('userData', userDataPath)
 
 // Initialize diagnostic logger early
 initLogger(userDataPath)
-logInfo(`[Startup] Hello 118:24 v${app.getVersion()} starting... (isDev=${isDev}, platform=${process.platform}, arch=${process.arch})`)
+logInfo(`[Startup] ${APP_CONFIG.name} v${app.getVersion()} starting... (isDev=${isDev}, platform=${process.platform}, arch=${process.arch})`)
 logInfo(`[Startup] Executable: ${process.execPath}`)
 logInfo(`[Startup] UserData: ${userDataPath}`)
 
@@ -154,7 +154,7 @@ export function ensureWindowsShortcut(): void {
   try {
     const programsPath = join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs')
     if (!existsSync(programsPath)) return
-    const shortcutPath = join(programsPath, 'Hello 11824.lnk')
+    const shortcutPath = join(programsPath, APP_CONFIG.shortcutName)
 
     // For packaged Windows installs, the shortcut icon MUST point to the actual EXE (which has the ICO embedded)
     // or an uncompressed .ico file. Pointing to paths inside app.asar causes Windows to display a blank document icon!
@@ -164,8 +164,8 @@ export function ensureWindowsShortcut(): void {
       target: process.execPath,
       args: isDev ? `"${app.getAppPath()}"` : '',
       cwd: app.getAppPath(),
-      description: 'Hello 118:24 — Daily Planner & Timetable',
-      appUserModelId: 'com.hello11824.desktop',
+      description: APP_CONFIG.description,
+      appUserModelId: APP_CONFIG.appId,
       icon: icoPath,
       iconIndex: 0
     })
@@ -213,7 +213,7 @@ export function updateAutoStart(openAtLogin: boolean, openAsHidden: boolean): vo
   if (process.platform === 'linux') {
     try {
       const autostartDir = join(app.getPath('home'), '.config', 'autostart')
-      const desktopFilePath = join(autostartDir, 'hello-118-24.desktop')
+      const desktopFilePath = join(autostartDir, 'selah.desktop')
       if (openAtLogin) {
         if (!existsSync(autostartDir)) {
           mkdirSync(autostartDir, { recursive: true })
@@ -222,10 +222,10 @@ export function updateAutoStart(openAtLogin: boolean, openAsHidden: boolean): vo
         const content = `[Desktop Entry]
 Type=Application
 Version=1.0
-Name=Hello 118:24
-Comment=Personal desktop companion for school, productivity, timetable management, and daily planning
+Name=${APP_CONFIG.name}
+Comment=${APP_CONFIG.description}
 Exec="${execPath}"${openAsHidden ? ' --hidden' : ''}
-Icon=hello-118-24
+Icon=icon
 Terminal=false
 Categories=Education;Utility;
 X-GNOME-Autostart-enabled=true
@@ -247,7 +247,7 @@ function setupApplicationMenu(): void {
   if (process.platform === 'darwin') {
     const template: Electron.MenuItemConstructorOptions[] = [
       {
-        label: 'Hello 118:24',
+        label: APP_CONFIG.name,
         submenu: [
           { role: 'about' },
           { type: 'separator' },
@@ -258,7 +258,7 @@ function setupApplicationMenu(): void {
           { role: 'unhide' },
           { type: 'separator' },
           {
-            label: 'Quit Hello 118:24',
+            label: `Quit ${APP_CONFIG.name}`,
             accelerator: 'Command+Q',
             click: () => {
               isAppQuitting = true
@@ -353,7 +353,8 @@ function ensureWindowWithinDisplayBounds(x: number, y: number, width: number, he
 
 function applyPinnedState(pinned: boolean) {
   if (!mainWindow || mainWindow.isDestroyed()) return
-  mainWindow.setAlwaysOnTop(pinned, pinned ? 'screen-saver' : 'normal')
+  mainWindow.setAlwaysOnTop(pinned, 'floating')
+  mainWindow.setContentProtection(false)
   if (pinned) {
     mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   }
@@ -433,7 +434,7 @@ function createWindow() {
   const savedHeight = parseInt(getSetting('window_height') || String(defaultHeight), 10)
   const savedX = parseInt(getSetting('window_x') || '-9999', 10)
   const savedY = parseInt(getSetting('window_y') || '-9999', 10)
-  const isPinned = getSetting('pinned') !== 'false'
+  const isPinned = getSetting('pinned') === 'true'
 
   const hasSavedPos = !isNaN(savedX) && !isNaN(savedY) && savedX !== -9999 && savedY !== -9999
 
@@ -463,7 +464,7 @@ function createWindow() {
     alwaysOnTop: isPinned,
     resizable: true,
     show: false,
-    title: 'Hello 118:24',
+    title: APP_CONFIG.name,
     icon: appIcon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -510,7 +511,7 @@ function createWindow() {
       }
     } else {
       dialog.showErrorBox(
-        'Hello 118:24 - Startup Load Error',
+        `${APP_CONFIG.name} - Startup Load Error`,
         `The application interface failed to load (${errorDescription} [${errorCode}]).\n\nPlease review the logs at:\n${userDataPath}\\logs\\app.log`
       )
     }
@@ -521,7 +522,7 @@ function createWindow() {
   })
 
   mainWindow.webContents.on('did-finish-load', () => {
-    logInfo('[Hello 118:24] Renderer loaded successfully.')
+    logInfo(`[${APP_CONFIG.name}] Renderer loaded successfully.`)
   })
 
   mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
@@ -545,9 +546,9 @@ function createWindow() {
         applyPinnedState(true)
       }
       const b = mainWindow.getBounds()
-      logInfo(`[Hello 118:24] Window displayed: isVisible=${mainWindow.isVisible()} (${b.width}x${b.height} at x=${b.x}, y=${b.y})`)
+      logInfo(`[${APP_CONFIG.name}] Window displayed: isVisible=${mainWindow.isVisible()} (${b.width}x${b.height} at x=${b.x}, y=${b.y})`)
     } else {
-      logInfo('[Hello 118:24] Started minimized to system tray.')
+      logInfo(`[${APP_CONFIG.name}] Started minimized to system tray.`)
     }
   }
 
@@ -558,14 +559,14 @@ function createWindow() {
 
   // Ensure pinned topmost status sticks on Windows blur and show
   mainWindow.on('show', () => {
-    const pinned = getSetting('pinned') !== 'false'
+    const pinned = getSetting('pinned') === 'true'
     if (pinned) {
       applyPinnedState(true)
     }
   })
 
   mainWindow.on('blur', () => {
-    const pinned = getSetting('pinned') !== 'false'
+    const pinned = getSetting('pinned') === 'true'
     if (pinned && mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) {
       applyPinnedState(true)
     }
@@ -616,18 +617,18 @@ function createWindow() {
 function updateTrayMenu() {
   if (!tray) return
 
-  const isPinned = getSetting('pinned') !== 'false'
+  const isPinned = getSetting('pinned') === 'true'
   const startupSetting = app.getLoginItemSettings()
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Open Hello 118:24',
+      label: `Open ${APP_CONFIG.name}`,
       click: () => {
         if (mainWindow) {
           if (mainWindow.isMinimized()) mainWindow.restore()
           mainWindow.show()
           mainWindow.focus()
-          const pinned = getSetting('pinned') !== 'false'
+          const pinned = getSetting('pinned') === 'true'
           if (pinned) {
             applyPinnedState(true)
           }
@@ -674,7 +675,7 @@ function updateTrayMenu() {
     },
     { type: 'separator' },
     {
-      label: 'Quit Hello 118:24',
+      label: `Quit ${APP_CONFIG.name}`,
       click: () => {
         isAppQuitting = true
         app.quit()
@@ -691,7 +692,7 @@ if (gotSingleInstanceLock) {
       if (mainWindow.isMinimized()) mainWindow.restore()
       if (!mainWindow.isVisible()) mainWindow.show()
       mainWindow.focus()
-      const pinned = getSetting('pinned') !== 'false'
+      const pinned = getSetting('pinned') === 'true'
       if (pinned) {
         applyPinnedState(true)
       }
@@ -704,7 +705,7 @@ if (gotSingleInstanceLock) {
       setupSecurityHeaders()
 
       if (process.platform === 'win32') {
-        app.setAppUserModelId('com.hello11824.desktop')
+        app.setAppUserModelId(APP_CONFIG.appId)
         ensureWindowsShortcut()
       }
 
@@ -726,7 +727,7 @@ if (gotSingleInstanceLock) {
       try {
         const icon = createTrayIcon()
         tray = new Tray(icon)
-        tray.setToolTip('Hello 118:24 — Daily Planner & Timetable')
+        tray.setToolTip(`${APP_CONFIG.name} — Desktop Planner & Companion`)
         updateTrayMenu()
         tray.on('click', () => {
           if (mainWindow) {
@@ -735,7 +736,7 @@ if (gotSingleInstanceLock) {
             } else {
               mainWindow.show()
               mainWindow.focus()
-              const pinned = getSetting('pinned') !== 'false'
+              const pinned = getSetting('pinned') === 'true'
               if (pinned) {
                 applyPinnedState(true)
               }
@@ -754,7 +755,7 @@ if (gotSingleInstanceLock) {
       logError('[App] Critical error during app.whenReady initialization:', err)
       if (app.isPackaged) {
         dialog.showErrorBox(
-          'Hello 118:24 - Startup Initialization Failed',
+          `${APP_CONFIG.name} - Startup Initialization Failed`,
           `A critical error occurred while starting the application:\n\n${err instanceof Error ? err.stack || err.message : String(err)}\n\nPlease check the logs in:\n${userDataPath}\\logs\\app.log`
         )
       }
@@ -766,7 +767,7 @@ if (gotSingleInstanceLock) {
       } else {
         mainWindow?.show()
         mainWindow?.focus()
-        const pinned = getSetting('pinned') !== 'false'
+        const pinned = getSetting('pinned') === 'true'
         if (pinned) {
           applyPinnedState(true)
         }
@@ -1503,8 +1504,8 @@ ipcMain.handle('data:export', async (event) => {
   if (!mainWindow || mainWindow.isDestroyed()) return false
   const data = exportAllData()
   const saveResult = await dialog.showSaveDialog(mainWindow, {
-    title: 'Export Hello 118:24 Data Backup',
-    defaultPath: `hello11824-backup-${new Date().toISOString().slice(0, 10)}.json`,
+    title: `Export ${APP_CONFIG.name} Data Backup`,
+    defaultPath: `selah-backup-${new Date().toISOString().slice(0, 10)}.json`,
     filters: [{ name: 'JSON Backup (*.json)', extensions: ['json'] }]
   })
 
@@ -1520,7 +1521,7 @@ ipcMain.handle('data:import', async (event) => {
   assertAuthorizedSender(event)
   if (!mainWindow || mainWindow.isDestroyed()) return false
   const openResult = await dialog.showOpenDialog(mainWindow, {
-    title: 'Restore Hello 118:24 Backup',
+    title: `Restore ${APP_CONFIG.name} Backup`,
     properties: ['openFile'],
     filters: [{ name: 'JSON Backup (*.json)', extensions: ['json'] }]
   })

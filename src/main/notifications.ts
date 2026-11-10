@@ -1,6 +1,7 @@
 import { Notification, NativeImage } from 'electron'
 import { listClasses, listTasks, getSetting, getPendingRemindersToTrigger, markReminderDelivered } from './db'
 import { getFreeTimeSuggestion } from './freeTimeEngine'
+import { APP_CONFIG } from '../shared/appConfig'
 
 let reminderInterval: NodeJS.Timeout | null = null
 const sentNotificationKeys = new Set<string>()
@@ -77,7 +78,7 @@ export function checkReminders(): void {
 
           const appIcon = getIconResolver ? getIconResolver() : undefined
           const notif = new Notification({
-            title: `Hello 118:24 — Class Reminder`,
+            title: `${APP_CONFIG.name} — Class Reminder`,
             body: `${c.title}${roomText}\n${timeText}`,
             icon: appIcon,
             silent: false
@@ -125,7 +126,7 @@ export function checkReminders(): void {
       if (!sentNotificationKeys.has(notifKey)) {
         sentNotificationKeys.add(notifKey)
 
-        const title = `Hello 118:24 — ${suggestion.freeMinutes} min Free Time`
+        const title = `${APP_CONFIG.name} — ${suggestion.freeMinutes} min Free Time`
         const body = suggestion.suggestedTask
           ? `Free until ${suggestion.freeUntil}${suggestion.nextEventTitle ? ` (${suggestion.nextEventTitle})` : ''}. Good time to work on: "${suggestion.suggestedTask.title}".`
           : suggestion.message
@@ -195,7 +196,7 @@ export function checkScheduleEventReminders(now: Date = new Date()): void {
             ? `Today (${reminder.start_date})`
             : `${reminder.start_time || ''}`
 
-          const title = `Hello 118:24 — ${reminder.category}: ${reminder.event_title}`
+          const title = `${APP_CONFIG.name} — ${reminder.category}: ${reminder.event_title}`
           const body = `${timeDisplay}${offsetText}${reminder.location ? ` • ${reminder.location}` : ''}${reminder.description ? `\n${reminder.description}` : ''}`
 
           const notif = new Notification({

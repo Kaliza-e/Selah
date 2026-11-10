@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import appLogo from '../assets/icon.png'
+import { APP_CONFIG } from '../../../shared/appConfig'
 import {
   Pin,
   Minus,
@@ -10,8 +11,16 @@ import {
   PictureInPicture2,
   Sun,
   Moon,
-  Sparkles
+  Bell
 } from 'lucide-react'
+
+function getCurrentWeekNumber(d = new Date()): number {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  const dayNum = date.getUTCDay() || 7
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1))
+  return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+}
 
 interface TitleBarProps {
   pinned: boolean
@@ -70,18 +79,18 @@ export function TitleBar({
   return (
     <header className="titlebar">
       <div className="brand">
-        <img src={appLogo} alt="Hello 118:24 logo" className="brand-logo-img" />
+        <img src={appLogo} alt={`${APP_CONFIG.name} logo`} className="brand-logo-img" />
         <div className="brand-title">
-          <span className="brand-script">Hello</span>
-          <span className="brand-number">118:24</span>
+          <span className="brand-script">{APP_CONFIG.name}</span>
         </div>
+        <span className="week-chip" title="Current calendar week">Week {getCurrentWeekNumber()}</span>
 
         {freeRemindersActive && (
           <span
             className="titlebar-reminder-badge"
             title="Smart Free Time Reminders are active"
           >
-            <Sparkles size={10} color="var(--accent-cyan)" />
+            <Bell size={11} color="var(--accent-cyan)" />
             <span className="indicator-live-dot" />
           </span>
         )}

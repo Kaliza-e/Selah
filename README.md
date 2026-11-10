@@ -1,14 +1,12 @@
-# Hello 118:24 — Windows Desktop Planner & Companion
+# Selah — Desktop Planner & Calendar Companion
 
-> *“This is the day which the LORD hath made; we will rejoice and be glad in it.”* — Psalm 118:24 (KJV)
-
-A Windows-first personal desktop timetable, task organizer, and daily planning companion built with **Electron 33**, **React 18**, **TypeScript**, **Vite**, and **SQLite (WAL mode)**.
+A personal desktop timetable, task organizer, and daily planning companion built with **Electron 33**, **React 18**, **TypeScript**, **Vite**, and **SQLite (WAL mode)**.
 
 ---
 
-## 🌟 Overview & Key Features
+## Overview & Key Features
 
-Hello 118:24 is designed as a focused, calming desktop companion for school, productivity, and everyday organization. It runs as a true floating Windows desktop widget with both a **compact widget mode** and an **expanded dashboard mode**.
+Selah is designed as a focused, calming desktop companion for school, productivity, and everyday organization. It runs as a true floating desktop widget with both a **compact widget mode** and an **expanded dashboard mode**.
 
 ### 1. Desktop Window & Widget Behavior
 - **Floating Widget**: Frameless, draggable desktop window with glassmorphism styling and ambient purple & blue accents.
@@ -87,9 +85,9 @@ Hello 118:24 follows the official Electron security guidelines and implements pr
 ## 🗄️ SQLite Database Schema & Migrations
 
 The database is stored locally in the operating system's standard user data directory with WAL mode enabled:
-- **Windows:** `%APPDATA%\hello-118-24\hello11824.sqlite`
-- **macOS:** `~/Library/Application Support/hello-118-24/hello11824.sqlite`
-- **Linux:** `~/.config/hello-118-24/hello11824.sqlite`
+- **Windows:** `%APPDATA%\selah\selah.sqlite`
+- **macOS:** `~/Library/Application Support/selah/selah.sqlite`
+- **Linux:** `~/.config/selah/selah.sqlite`
 
 Tables:
 - `classes`: `id`, `title`, `weekday`, `start_time`, `end_time`, `room`, `notes`, `color`, `created_at`
@@ -144,7 +142,7 @@ npm run package:linux
 ```
 
 This compiles production assets and generates:
-1. **Windows Installer**: `release/Hello 11824 Setup 0.1.2.exe`
-2. **macOS**: `release/Hello 11824-0.1.2.dmg` and `release/Hello 11824-0.1.2-mac.zip`
-3. **Linux**: `release/Hello-118-24-0.1.2.AppImage` and `release/hello-118-24_0.1.2_amd64.deb`
-4. **Unpacked Executable**: `release/win-unpacked/Hello 11824.exe`
+1. **Windows Installer**: `release/Selah Setup 0.1.2.exe`
+2. **macOS**: `release/Selah-0.1.2.dmg` and `release/Selah-0.1.2-mac.zip`
+3. **Linux**: `release/Selah-0.1.2.AppImage` and `release/selah_0.1.2_amd64.deb`
+4. **Unpacked Executable**: `release/win-unpacked/Selah.exe`

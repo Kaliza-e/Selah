@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { APP_CONFIG } from '../../../shared/appConfig'
 import {
   ChevronRight,
   Sunset,
@@ -691,7 +692,7 @@ export function SettingsView({
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Hello 118:24</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>{APP_CONFIG.name}</span>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Version {appVersion}</span>
           </div>
 

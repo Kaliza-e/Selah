@@ -3,6 +3,7 @@ import { app } from 'electron'
 import { join } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, copyFileSync, readdirSync, unlinkSync } from 'node:fs'
 import { encryptAtRest, decryptAtRest } from './security'
+import { APP_CONFIG } from '../shared/appConfig'
 
 export interface TaskRecord {
   id: number
@@ -143,7 +144,10 @@ let db: Database.Database
 export function createDatabaseBackup(): string | null {
   try {
     const dir = app.getPath('userData')
-    const dbPath = join(dir, 'hello11824.sqlite')
+    let dbPath = join(dir, APP_CONFIG.databaseName)
+    if (!existsSync(dbPath)) {
+      dbPath = join(dir, 'hello11824.sqlite')
+    }
     if (!existsSync(dbPath)) return null
 
     const backupsDir = join(dir, 'backups')
@@ -152,7 +156,7 @@ export function createDatabaseBackup(): string | null {
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-    const backupPath = join(backupsDir, `hello11824-backup-${timestamp}.sqlite`)
+    const backupPath = join(backupsDir, `selah-backup-${timestamp}.sqlite`)
     copyFileSync(dbPath, backupPath)
 
     // Maintain a rolling window of the last 5 automated backups
@@ -189,21 +193,28 @@ export function initDatabase(): Database.Database {
     mkdirSync(dir, { recursive: true })
   }
 
-  const dbPath = join(dir, 'hello11824.sqlite')
+  const dbPath = join(dir, APP_CONFIG.databaseName)
+  const prevDbPath = join(dir, 'hello11824.sqlite')
   const legacyDbPath = join(dir, 'daylight.sqlite')
-  const prodDbPath = join(app.getPath('appData'), 'hello-118-24', 'hello11824.sqlite')
+  const prevProdDbPath = join(app.getPath('appData'), 'hello-118-24', 'hello11824.sqlite')
 
-  // Seamless migration from legacy database or copy existing data to dev database
+  // Seamless migration from previous databases
   if (!existsSync(dbPath)) {
-    if (existsSync(legacyDbPath)) {
+    if (existsSync(prevDbPath)) {
       try {
-        copyFileSync(legacyDbPath, dbPath)
+        copyFileSync(prevDbPath, dbPath)
       } catch {
         // Continue with fresh database
       }
-    } else if (existsSync(prodDbPath) && prodDbPath !== dbPath) {
+    } else if (existsSync(prevProdDbPath)) {
       try {
-        copyFileSync(prodDbPath, dbPath)
+        copyFileSync(prevProdDbPath, dbPath)
+      } catch {
+        // Continue with fresh database
+      }
+    } else if (existsSync(legacyDbPath)) {
+      try {
+        copyFileSync(legacyDbPath, dbPath)
       } catch {
         // Continue with fresh database
       }

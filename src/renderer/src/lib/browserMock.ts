@@ -1,4 +1,5 @@
 import type { HelloAPI, Task, ClassItem, SubjectItem, DailyPlan, ImportResult, CandidateSubject } from '../vite-env'
+import { APP_CONFIG } from '../../../shared/appConfig'
 
 const STORAGE_KEYS = {
   TASKS: 'hello11824_tasks',
@@ -760,7 +761,7 @@ export function initBrowserFallback(): void {
     window.hello11824 = mock
     window.daylight = mock
     console.info(
-      '%c[Hello 118:24]%c Running in Web Browser mode with localStorage preview. Native desktop features (Always-on-top, System Tray, Local SQLite) run in the Electron window.',
+      `%c[${APP_CONFIG.name}]%c Running in Web Browser mode with localStorage preview. Native desktop features (Always-on-top, System Tray, Local SQLite) run in the Electron window.`,
       'color: #818cf8; font-weight: bold;',
       'color: inherit;'
     )
