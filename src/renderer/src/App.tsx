@@ -31,7 +31,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('today')
   const [tasks, setTasks] = useState<Task[]>([])
   const [classes, setClasses] = useState<ClassItem[]>([])
-  const [pinned, setPinned] = useState(true)
+  const [pinned, setPinned] = useState(false)
   const [widgetMode, setWidgetMode] = useState<'compact' | 'standard'>('compact')
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   const [toast, setToast] = useState<ToastData | null>(null)

@@ -14,6 +14,7 @@ import { Task, toDateKey } from '../types'
 import { TaskModal } from './TaskModal'
 import { PortalMenu } from './PortalMenu'
 import { formatTaskDate, isTaskOverdue } from '../lib/dateUtils'
+import { formatDurationDisplay } from '../lib/durationUtils'
 
 interface TasksViewProps {
   tasks: Task[]
@@ -198,7 +199,7 @@ export function TasksView({
                       className="duration-badge-pill"
                       title={`Estimated time: ${t.estimated_minutes} minutes`}
                     >
-                      <Clock size={10} /> {t.estimated_minutes}m
+                      <Clock size={10} /> {formatDurationDisplay(t.estimated_minutes)}
                     </span>
                   ) : null}
 

@@ -464,9 +464,29 @@ export function initDatabase(): Database.Database {
     }
   }
 
+  if (currentVersion < 6) {
+    try {
+      // Migration V6: Clean leftover seed/mock lessons and sample timetable content
+      // Preserves all user-created tasks, custom schedules, and journal entries
+      db.exec(`
+        DELETE FROM classes 
+        WHERE (
+          title IN ('Data Structures & Algorithms', 'Computer Networks', 'Database Systems', 'Web Development', 'Discrete Mathematics', 'Software Engineering', 'Sample Subject', 'Physics Sample', 'Sample Lesson')
+          AND (room IN ('Lab 1', 'Lab 2', 'Lab 3', 'Room 204', 'Hall A') OR room IS NULL)
+        );
+
+        DELETE FROM settings WHERE key IN ('has_seeded_lessons', 'sample_data_initialized', 'seed_imported');
+
+        INSERT OR REPLACE INTO schema_version (version) VALUES (6);
+      `)
+    } catch (err) {
+      console.error('Error running migration v6:', err)
+    }
+  }
+
   // Ensure default settings exist
   const defaultSettings: Record<string, string> = {
-    pinned: 'true',
+    pinned: 'false',
     widget_mode: 'compact', // 'compact' or 'standard'
     launch_on_startup: 'true',
     start_minimized: 'false',

@@ -16,6 +16,8 @@ import {
   ScheduleEvent,
   EventReminder
 } from '../types'
+import { DurationPicker } from './DurationPicker'
+import { addMinutesToTime, calculateMinutesBetween } from '../lib/durationUtils'
 
 interface ScheduleEventModalProps {
   isOpen: boolean
@@ -250,27 +252,53 @@ export function ScheduleEventModal({
             </div>
 
             {!isAllDay && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <div>
-                  <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Start Time</label>
-                  <input
-                    type="time"
-                    className="form-input"
-                    value={startTime}
-                    onChange={e => setStartTime(e.target.value)}
-                  />
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Start Time</label>
+                    <input
+                      type="time"
+                      className="form-input"
+                      value={startTime}
+                      onChange={e => {
+                        const newStart = e.target.value
+                        setStartTime(newStart)
+                        // If duration was active and end time exists, update end time
+                        const currentDur = calculateMinutesBetween(startTime, endTime)
+                        if (newStart && currentDur) {
+                          setEndTime(addMinutesToTime(newStart, currentDur))
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>End Time</label>
+                    <input
+                      type="time"
+                      className="form-input"
+                      value={endTime}
+                      onChange={e => setEndTime(e.target.value)}
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>End Time</label>
-                  <input
-                    type="time"
-                    className="form-input"
-                    value={endTime}
-                    onChange={e => setEndTime(e.target.value)}
+                <div style={{ marginTop: 4 }}>
+                  <DurationPicker
+                    valueMinutes={startTime && endTime ? calculateMinutesBetween(startTime, endTime) : null}
+                    onChange={mins => {
+                      if (mins && startTime) {
+                        setEndTime(addMinutesToTime(startTime, mins))
+                      } else if (!startTime && mins) {
+                        setStartTime('09:00')
+                        setEndTime(addMinutesToTime('09:00', mins))
+                      }
+                    }}
+                    label="Event Duration"
+                    helperText="Adjusts end time automatically"
                   />
                 </div>
-              </div>
+              </>
             )}
           </div>
 

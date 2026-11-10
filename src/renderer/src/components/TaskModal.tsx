@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { X, Calendar, Clock, Tag, Flag, Sparkles, Check, ArrowRight } from 'lucide-react'
 import { Task, toDateKey } from '../types'
 import { parseNaturalLanguageTask, ParsedTaskInput } from '../../../shared/nlParser'
+import { DurationPicker } from './DurationPicker'
 
 interface TaskModalProps {
   isOpen: boolean
@@ -28,7 +29,6 @@ export function TaskModal({ isOpen, onClose, task, defaultDate, onSave }: TaskMo
   const [priority, setPriority] = useState<'low' | 'normal' | 'high'>('normal')
   const [category, setCategory] = useState('')
   const [estimatedMinutes, setEstimatedMinutes] = useState<number | ''>('')
-  const [isCustomDuration, setIsCustomDuration] = useState(false)
   const [saving, setSaving] = useState(false)
 
   // Real-time parsed live preview of natural language entry
@@ -44,7 +44,6 @@ export function TaskModal({ isOpen, onClose, task, defaultDate, onSave }: TaskMo
     if (parsed.category) setCategory(parsed.category)
     if (parsed.estimatedMinutes) {
       setEstimatedMinutes(parsed.estimatedMinutes)
-      setIsCustomDuration(![15, 25, 30, 45, 60, 90].includes(parsed.estimatedMinutes))
     }
   }
 
@@ -59,7 +58,6 @@ export function TaskModal({ isOpen, onClose, task, defaultDate, onSave }: TaskMo
       setCategory(task.category || '')
       const est = task.estimated_minutes ?? ''
       setEstimatedMinutes(est)
-      setIsCustomDuration(est !== '' && ![15, 25, 30, 45, 60, 90].includes(Number(est)))
     } else {
       setNlInput('')
       setTitle('')
@@ -69,7 +67,6 @@ export function TaskModal({ isOpen, onClose, task, defaultDate, onSave }: TaskMo
       setPriority('normal')
       setCategory('')
       setEstimatedMinutes('')
-      setIsCustomDuration(false)
     }
   }, [task, defaultDate, isOpen])
 
@@ -147,7 +144,6 @@ export function TaskModal({ isOpen, onClose, task, defaultDate, onSave }: TaskMo
                       if (parsed.category) setCategory(parsed.category)
                       if (parsed.estimatedMinutes) {
                         setEstimatedMinutes(parsed.estimatedMinutes)
-                        setIsCustomDuration(![15, 25, 30, 45, 60, 90].includes(parsed.estimatedMinutes))
                       }
                     }}
                     style={{ background: 'var(--bg-card)' }}
@@ -285,63 +281,14 @@ export function TaskModal({ isOpen, onClose, task, defaultDate, onSave }: TaskMo
               </div>
             </div>
 
-            {/* Smart Free Time Estimation */}
+            {/* Free Duration Input with Quick-Pick Chips and Validation */}
             <div className="input-group">
-              <label className="input-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Estimated Duration</span>
-                <span style={{ fontSize: 10.5, color: 'var(--accent-purple)', fontWeight: 500 }}>
-                  Used for smart free-time reminders
-                </span>
-              </label>
-
-              <div style={{ display: 'grid', gridTemplateColumns: isCustomDuration ? '1fr 1fr' : '1fr', gap: 8 }}>
-                <select
-                  className="select-field"
-                  value={isCustomDuration ? 'custom' : estimatedMinutes === '' ? '' : String(estimatedMinutes)}
-                  onChange={e => {
-                    const val = e.target.value
-                    if (val === 'custom') {
-                      setIsCustomDuration(true)
-                      if (estimatedMinutes === '') setEstimatedMinutes(20)
-                    } else if (val === '') {
-                      setIsCustomDuration(false)
-                      setEstimatedMinutes('')
-                    } else {
-                      setIsCustomDuration(false)
-                      setEstimatedMinutes(Number(val))
-                    }
-                  }}
-                >
-                  <option value="">No estimate (auto-fit)</option>
-                  <option value="15">15 minutes (Quick review / Flashcards)</option>
-                  <option value="25">25 minutes (Pomodoro / Short exercise)</option>
-                  <option value="30">30 minutes (Reading / Lab setup)</option>
-                  <option value="45">45 minutes (Assignment draft / Practice)</option>
-                  <option value="60">60 minutes (Deep study session)</option>
-                  <option value="90">90 minutes (Full exam practice)</option>
-                  <option value="custom">Custom duration...</option>
-                </select>
-
-                {isCustomDuration && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <input
-                      type="number"
-                      min={5}
-                      max={480}
-                      step={5}
-                      className="input-field"
-                      placeholder="Minutes"
-                      value={estimatedMinutes}
-                      onChange={e => {
-                        const val = parseInt(e.target.value, 10)
-                        setEstimatedMinutes(isNaN(val) ? '' : Math.max(1, val))
-                      }}
-                      style={{ width: '100%' }}
-                    />
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>min</span>
-                  </div>
-                )}
-              </div>
+              <DurationPicker
+                valueMinutes={estimatedMinutes === '' ? null : Number(estimatedMinutes)}
+                onChange={mins => setEstimatedMinutes(mins === null ? '' : mins)}
+                label="Duration"
+                helperText="e.g. 1h 30m, 45m, or 90"
+              />
             </div>
           </div>
 

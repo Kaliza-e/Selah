@@ -35,20 +35,9 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   widget_mode: 'compact'
 }
 
-const DEFAULT_CLASSES: ClassItem[] = [
-  { id: 1, title: 'Data Structures & Algorithms', weekday: 1, start_time: '08:30', end_time: '10:00', room: 'Lab 2', notes: 'Trees & Graphs', color: '#818cf8', created_at: new Date().toISOString() },
-  { id: 2, title: 'Computer Networks', weekday: 1, start_time: '10:30', end_time: '12:00', room: 'Room 204', notes: 'OSI Model & TCP/IP', color: '#38bdf8', created_at: new Date().toISOString() },
-  { id: 3, title: 'Database Systems', weekday: 2, start_time: '09:00', end_time: '11:00', room: 'Lab 1', notes: 'SQL & Normalization', color: '#34d399', created_at: new Date().toISOString() },
-  { id: 4, title: 'Web Development', weekday: 3, start_time: '13:30', end_time: '15:30', room: 'Lab 3', notes: 'React & Vite UI', color: '#f472b6', created_at: new Date().toISOString() },
-  { id: 5, title: 'Discrete Mathematics', weekday: 4, start_time: '11:00', end_time: '12:30', room: 'Hall A', notes: 'Set Theory & Logic', color: '#fbbf24', created_at: new Date().toISOString() },
-  { id: 6, title: 'Software Engineering', weekday: 5, start_time: '08:30', end_time: '10:30', room: 'Lab 2', notes: 'Agile & Git Workflow', color: '#a78bfa', created_at: new Date().toISOString() }
-]
+const DEFAULT_CLASSES: ClassItem[] = []
 
-const DEFAULT_TASKS: Task[] = [
-  { id: 1, title: 'Review Database normalization notes', description: 'Covers 1NF through BCNF', due_date: new Date().toISOString().slice(0, 10), due_time: '18:00', priority: 'high', completed: 0, category: 'Academic', class_id: 3, created_at: new Date().toISOString() },
-  { id: 2, title: 'Submit DSA Lab assignment 4', description: 'Implement Binary Search Tree methods', due_date: new Date().toISOString().slice(0, 10), due_time: '23:59', priority: 'high', completed: 0, category: 'Assignment', class_id: 1, created_at: new Date().toISOString() },
-  { id: 3, title: 'Pack laptop charger and notebook', description: 'For tomorrow morning class', due_date: new Date().toISOString().slice(0, 10), due_time: '21:00', priority: 'normal', completed: 1, category: 'Personal', class_id: null, created_at: new Date().toISOString() }
-]
+const DEFAULT_TASKS: Task[] = []
 
 export function createBrowserMockApi(): HelloAPI {
   const modeListeners: Set<(mode?: 'compact' | 'standard') => void> = new Set()

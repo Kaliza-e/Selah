@@ -16,6 +16,7 @@ import { FreeTimeBanner } from './FreeTimeBanner'
 import { FaithJournalCard } from './FaithJournalCard'
 import { ExamCountdownCard } from './ExamCountdownCard'
 import { formatTaskDate, isTaskOverdue } from '../lib/dateUtils'
+import { formatDurationDisplay } from '../lib/durationUtils'
 
 interface TodayViewProps {
   today: Date
@@ -518,6 +519,16 @@ export function TodayView({
                           <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#f43f5e', display: 'inline-block' }} title="High Priority" />
                         ) : t.priority === 'low' ? (
                           <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} title="Low Priority" />
+                        ) : null}
+
+                        {t.estimated_minutes ? (
+                          <span
+                            className="duration-badge-pill"
+                            title={`Estimated time: ${t.estimated_minutes} minutes`}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                          >
+                            <Clock size={10} /> {formatDurationDisplay(t.estimated_minutes)}
+                          </span>
                         ) : null}
 
                         {t.total_time_spent_seconds && t.total_time_spent_seconds > 0 ? (
