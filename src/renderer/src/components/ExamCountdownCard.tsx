@@ -3,10 +3,10 @@ import {
   GraduationCap,
   AlertTriangle,
   Clock,
-  Sparkles,
   Calendar,
   ChevronRight,
-  BookOpen
+  BookOpen,
+  MapPin
 } from 'lucide-react'
 import { ScheduleEvent, Task, toDateKey } from '../types'
 
@@ -186,10 +186,23 @@ export function ExamCountdownCard({
                 </span>
               </div>
 
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>📅 {nextExam.start_date}</span>
-                {nextExam.start_time && <span>⏰ {nextExam.start_time}</span>}
-                {nextExam.location && <span>📍 {nextExam.location}</span>}
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Calendar size={12} color="var(--accent-purple)" />
+                  {nextExam.start_date}
+                </span>
+                {nextExam.start_time && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Clock size={12} color="var(--accent-cyan)" />
+                    {nextExam.start_time}
+                  </span>
+                )}
+                {nextExam.location && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <MapPin size={12} color="var(--accent-cyan)" />
+                    {nextExam.location}
+                  </span>
+                )}
               </div>
             </div>
           </div>

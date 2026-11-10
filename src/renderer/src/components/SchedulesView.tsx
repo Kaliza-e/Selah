@@ -16,11 +16,11 @@ import {
   CalendarDays,
   FolderOpen,
   X,
-  Sparkles,
   ChevronRight,
   Download,
   FileSpreadsheet,
-  FileDown
+  FileDown,
+  CalendarPlus
 } from 'lucide-react'
 import {
   ScheduleEvent,
@@ -318,9 +318,9 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
   return (
     <div className="schedules-view" style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 14 }}>
       {/* Top Header - Matches TimetableManager exactly */}
-      <div className="view-top-header">
+      <div className="view-top-header" style={{ flexWrap: 'wrap', gap: 10 }}>
         <h2 className="view-page-title">Schedules</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative', flexWrap: 'wrap' }}>
           <button
             type="button"
             className="btn-primary-pill"
@@ -328,7 +328,7 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
             onClick={() => setIsCreatorModalOpen(true)}
             title="Design a study plan, exam prep, or weekly schedule"
           >
-            <Sparkles size={13} /> Create Schedule
+            <CalendarPlus size={13} /> Create Schedule
           </button>
 
           <button
@@ -408,14 +408,14 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
           <button
             type="button"
             className="btn-secondary-pill"
-            style={{ width: 34, height: 32, padding: 0, justifyContent: 'center' }}
             onClick={() => {
               setEditingEvent(null)
               setIsEventModalOpen(true)
             }}
-            title="Add event manually"
+            title="New event"
+            aria-label="New event"
           >
-            <Plus size={15} />
+            <Plus size={13} /> <span>New event</span>
           </button>
 
           <button
@@ -424,36 +424,54 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
             onClick={() => setIsDocsDrawerOpen(prev => !prev)}
             title="View imported source documents"
           >
-            <FolderOpen size={13} /> Docs ({sourceDocs.length})
+            <FolderOpen size={13} />
+            <span>Docs</span>
+            <span
+              style={{
+                marginLeft: 4,
+                padding: '1px 6px',
+                fontSize: 10,
+                fontWeight: 700,
+                borderRadius: '9999px',
+                background: isDocsDrawerOpen ? 'var(--accent-purple)' : 'rgba(255, 255, 255, 0.1)',
+                color: '#ffffff'
+              }}
+            >
+              {sourceDocs.length}
+            </span>
           </button>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
+      {/* Filter and Search Bar: Single Time Segmented Control + Status Dropdown + Category + Search */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-        {/* Date & Status Pills Row matching Timetable day-pills */}
-        <div className="day-pills-row" style={{ flex: 1 }}>
-          {(['upcoming', 'this_week', 'this_month', 'all', 'past'] as const).map(df => (
-            <button
-              key={df}
-              type="button"
-              className={`day-pill-btn ${dateFilter === df ? 'active' : ''}`}
-              onClick={() => setDateFilter(df)}
-            >
-              {df === 'upcoming' ? 'Upcoming' : df === 'this_week' ? 'This Week' : df === 'this_month' ? 'This Month' : df === 'all' ? 'All' : 'Past'}
-            </button>
-          ))}
+        {/* Date Segmented Control: Upcoming / This Week / This Month / Past / All */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <div className="day-pills-row">
+            {(['upcoming', 'this_week', 'this_month', 'past', 'all'] as const).map(df => (
+              <button
+                key={df}
+                type="button"
+                className={`day-pill-btn ${dateFilter === df ? 'active' : ''}`}
+                onClick={() => setDateFilter(df)}
+              >
+                {df === 'upcoming' ? 'Upcoming' : df === 'this_week' ? 'This Week' : df === 'this_month' ? 'This Month' : df === 'past' ? 'Past' : 'All'}
+              </button>
+            ))}
+          </div>
 
-          {(['active', 'completed', 'all'] as const).map(sf => (
-            <button
-              key={sf}
-              type="button"
-              className={`day-pill-btn ${statusFilter === sf ? 'active' : ''}`}
-              onClick={() => setStatusFilter(sf)}
-            >
-              {sf === 'active' ? 'Active' : sf === 'completed' ? 'Completed' : 'Both'}
-            </button>
-          ))}
+          {/* Single Status Dropdown */}
+          <select
+            className="select-field"
+            style={{ padding: '5px 10px', fontSize: 12, height: 32, width: 'auto' }}
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value as 'all' | 'active' | 'completed')}
+            aria-label="Filter events by status"
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+          </select>
 
           {/* Category Dropdown */}
           <select
@@ -461,6 +479,7 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
             style={{ padding: '5px 10px', fontSize: 12, height: 32, width: 'auto' }}
             value={selectedCategory}
             onChange={e => setSelectedCategory(e.target.value)}
+            aria-label="Filter events by category"
           >
             <option value="All">All Categories</option>
             {SCHEDULE_CATEGORIES.map(cat => (
@@ -491,6 +510,7 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
             placeholder="Search events, exams, rooms..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
+            aria-label="Search schedule events"
           />
           {searchQuery && (
             <button
@@ -498,6 +518,8 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
               className="win-btn"
               style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', width: 22, height: 22 }}
               onClick={() => setSearchQuery('')}
+              title="Clear search"
+              aria-label="Clear search"
             >
               <X size={12} />
             </button>

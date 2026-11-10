@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Sparkles,
   Clock,
   CheckCircle2,
   ExternalLink,
   BellOff,
   X,
   Plus,
-  Play
+  Play,
+  Lightbulb
 } from 'lucide-react'
 import type { Task, FreeTimeSuggestion } from '../types'
 
@@ -158,7 +158,8 @@ export function FreeTimeBanner({
               }}
               title={suggestedTask.title}
             >
-              💡 {suggestedTask.title}
+              <Lightbulb size={12} color="var(--accent-purple)" style={{ flexShrink: 0 }} />
+              {suggestedTask.title}
             </span>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -185,13 +185,13 @@ export function TaskModal({ isOpen, onClose, task, defaultDate, onSave }: TaskMo
                       </span>
                     )}
                     {parsedNL.dueDate && (
-                      <span className="priority-badge-pill" style={{ background: 'var(--bg-card)', color: 'var(--accent-purple)' }}>
-                        📅 {parsedNL.dueDate}
+                      <span className="priority-badge-pill" style={{ background: 'var(--bg-card)', color: 'var(--accent-purple)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Calendar size={11} /> {parsedNL.dueDate}
                       </span>
                     )}
                     {parsedNL.dueTime && (
-                      <span className="priority-badge-pill" style={{ background: 'var(--bg-card)', color: 'var(--accent-cyan)' }}>
-                        ⏰ {parsedNL.dueTime}
+                      <span className="priority-badge-pill" style={{ background: 'var(--bg-card)', color: 'var(--accent-cyan)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Clock size={11} /> {parsedNL.dueTime}
                       </span>
                     )}
                     {parsedNL.priority && (

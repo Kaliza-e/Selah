@@ -277,7 +277,7 @@ export function FocusViewModal({
         >
           {isPomodoro && (
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-purple)', textTransform: 'uppercase', marginBottom: 4 }}>
-              {pomodoroPhase === 'work' ? '🔥 Focus Time' : '☕ Break Time'}
+              {pomodoroPhase === 'work' ? 'Focus Session' : 'Rest Break'}
             </span>
           )}
 

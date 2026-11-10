@@ -1791,35 +1791,35 @@ export function getUserStreakAndBadges(): UserStreakAndBadges {
       id: 'fresh_start',
       title: 'First Step',
       description: 'Completed your first planning task or study session.',
-      icon: '🌱',
+      icon: 'sprout',
       unlocked: totalCompletedTasks > 0 || totalStudyHours > 0
     },
     {
       id: 'momentum',
       title: 'Building Momentum',
       description: 'Maintained 3 consecutive days of active learning.',
-      icon: '🔥',
+      icon: 'flame',
       unlocked: streak >= 3
     },
     {
       id: 'consistency',
       title: 'Consistency Champion',
       description: 'Focused for 7 days in a row.',
-      icon: '🏆',
+      icon: 'trophy',
       unlocked: streak >= 7
     },
     {
       id: 'focus_master',
       title: 'Focus Master',
       description: 'Logged 10+ hours of dedicated study time.',
-      icon: '⏱️',
+      icon: 'clock',
       unlocked: totalStudyHours >= 10
     },
     {
       id: 'achiever',
       title: 'Goal Achiever',
       description: 'Successfully checked off 20+ completed tasks.',
-      icon: '⭐',
+      icon: 'star',
       unlocked: totalCompletedTasks >= 20
     }
   ]

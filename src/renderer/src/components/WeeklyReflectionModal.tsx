@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
   X,
-  Sparkles,
   Trophy,
   Flame,
   Award,
@@ -9,9 +8,35 @@ import {
   Calendar,
   CheckCircle2,
   TrendingUp,
-  Clock
+  Clock,
+  Sprout,
+  Star,
+  Lightbulb
 } from 'lucide-react'
 import { WeeklyReflectionReport, UserStreakAndBadges, toDateKey } from '../types'
+
+function renderBadgeIcon(iconName: string) {
+  switch (iconName) {
+    case 'sprout':
+    case 'fresh_start':
+      return <Sprout size={18} color="var(--accent-cyan)" />
+    case 'flame':
+    case 'momentum':
+      return <Flame size={18} color="#f97316" />
+    case 'trophy':
+    case 'consistency':
+      return <Trophy size={18} color="#eab308" />
+    case 'clock':
+    case 'timer':
+    case 'focus_master':
+      return <Clock size={18} color="var(--accent-purple)" />
+    case 'star':
+    case 'achiever':
+      return <Star size={18} color="#eab308" />
+    default:
+      return <Award size={18} color="var(--accent-purple)" />
+  }
+}
 
 interface WeeklyReflectionModalProps {
   isOpen: boolean
@@ -140,8 +165,9 @@ export function WeeklyReflectionModal({
                     <span>Best Study Day: {report.bestDay.dayName} ({Math.floor(report.bestDay.minutes / 60)}h {report.bestDay.minutes % 60}m)</span>
                   </div>
                 )}
-                <p style={{ margin: 0, fontSize: 11.5, color: 'var(--text-primary)', lineHeight: 1.4 }}>
-                  💡 <strong>Coach Suggestion:</strong> {report.suggestion}
+                <p style={{ margin: 0, fontSize: 11.5, color: 'var(--text-primary)', lineHeight: 1.4, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                  <Lightbulb size={14} color="var(--accent-purple)" style={{ marginTop: 2, flexShrink: 0 }} />
+                  <span><strong>Coach Suggestion:</strong> {report.suggestion}</span>
                 </p>
               </div>
 
@@ -166,7 +192,9 @@ export function WeeklyReflectionModal({
                           opacity: b.unlocked ? 1 : 0.45
                         }}
                       >
-                        <span style={{ fontSize: 18 }}>{b.icon}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
+                          {renderBadgeIcon(b.icon)}
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                           <span style={{ fontSize: 11, fontWeight: 600, color: b.unlocked ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                             {b.title}

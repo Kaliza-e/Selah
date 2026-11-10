@@ -320,7 +320,7 @@ export function generatePrintableHtml(
         </td>
         <td class="cat-col"><span class="badge ${ev.category.toLowerCase().replace(/\s+/g, '-')}">${escapeHtml(ev.category)}</span></td>
         <td class="loc-col">${escapeHtml(ev.location || '—')}</td>
-        <td class="status-col">${ev.is_completed ? '✓ Completed' : 'Active'}</td>
+        <td class="status-col">${ev.is_completed ? 'Completed' : 'Active'}</td>
       </tr>
     `
   }).join('')

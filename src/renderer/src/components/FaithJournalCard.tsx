@@ -1,15 +1,17 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   Heart,
-  Sparkles,
   Sun,
   Moon,
   ChevronDown,
   ChevronUp,
   Save,
-  Smile,
   BookOpen,
-  Check
+  Check,
+  Shield,
+  Zap,
+  Target,
+  Lock
 } from 'lucide-react'
 import {
   BibleTranslation,
@@ -26,11 +28,11 @@ interface FaithJournalCardProps {
 }
 
 const MOOD_OPTIONS = [
-  { id: 'peace', label: '🕊️ Peace', desc: 'Anxious / Stressed' },
-  { id: 'strength', label: '💪 Strength', desc: 'Tired / Drained' },
-  { id: 'gratitude', label: '🙏 Gratitude', desc: 'Thankful / Blessed' },
-  { id: 'hope', label: '🌅 Hope', desc: 'Discouraged' },
-  { id: 'focus', label: '🎯 Focus', desc: 'Seeking Wisdom' }
+  { id: 'peace', label: 'Peace', desc: 'Anxious / Stressed', icon: Shield },
+  { id: 'strength', label: 'Strength', desc: 'Tired / Drained', icon: Zap },
+  { id: 'gratitude', label: 'Gratitude', desc: 'Thankful / Blessed', icon: Heart },
+  { id: 'hope', label: 'Hope', desc: 'Discouraged', icon: Sun },
+  { id: 'focus', label: 'Focus', desc: 'Seeking Wisdom', icon: Target }
 ] as const
 
 export function FaithJournalCard({ today, onShowMessage }: FaithJournalCardProps) {
@@ -165,18 +167,22 @@ export function FaithJournalCard({ today, onShowMessage }: FaithJournalCardProps
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, paddingTop: 6, borderTop: '1px solid var(--border-subtle)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>Verses for how you feel:</span>
-            {MOOD_OPTIONS.map(m => (
-              <button
-                key={m.id}
-                type="button"
-                className={`day-pill-btn ${activeMood === m.id ? 'active' : ''}`}
-                style={{ padding: '2px 8px', fontSize: 10.5 }}
-                onClick={() => setActiveMood(prev => (prev === m.id ? null : m.id))}
-                title={m.desc}
-              >
-                {m.label}
-              </button>
-            ))}
+            {MOOD_OPTIONS.map(m => {
+              const MoodIcon = m.icon
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  className={`day-pill-btn ${activeMood === m.id ? 'active' : ''}`}
+                  style={{ padding: '2px 8px', fontSize: 10.5, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  onClick={() => setActiveMood(prev => (prev === m.id ? null : m.id))}
+                  title={m.desc}
+                >
+                  <MoodIcon size={11} />
+                  <span>{m.label}</span>
+                </button>
+              )
+            })}
           </div>
 
           {/* Collapsible Journal Trigger */}
@@ -226,7 +232,9 @@ export function FaithJournalCard({ today, onShowMessage }: FaithJournalCardProps
                 </button>
               </div>
 
-              <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>🔒 Private & encrypted at rest</span>
+              <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <Lock size={10} /> Private & encrypted at rest
+              </span>
             </div>
 
             {journalType === 'morning' ? (

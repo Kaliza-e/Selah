@@ -61,6 +61,13 @@ export function TodayView({
 }: TodayViewProps) {
   const todayKey = toDateKey(today)
   const todayWeekday = today.getDay()
+  const [userName, setUserName] = useState<string>('')
+
+  useEffect(() => {
+    window.hello11824?.getSetting?.('user_name').then(val => {
+      if (val && typeof val === 'string') setUserName(val.trim())
+    })
+  }, [])
 
   // Format date: "Mon, Oct 26, 2026"
   const formattedDate = useMemo(() => {
@@ -91,10 +98,9 @@ export function TodayView({
   // Greeting by time of day
   const greeting = useMemo(() => {
     const hour = today.getHours()
-    if (hour < 12) return 'Good morning, Friend! ☀️'
-    if (hour < 17) return 'Good afternoon, Friend! ☀️'
-    return 'Good evening, Friend! 🌙'
-  }, [today])
+    const prefix = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+    return userName ? `${prefix}, ${userName}` : prefix
+  }, [today, userName])
 
   // Today's classes
   const todaysSubjects = useMemo(() => {

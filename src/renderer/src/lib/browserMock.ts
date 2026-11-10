@@ -735,15 +735,15 @@ export function createBrowserMockApi(): HelloAPI {
         totalCompletedTasks: 8,
         totalStudyHours: 4,
         badges: [
-          { id: 'fresh_start', title: 'First Step', description: 'Started learning journey.', icon: '🌱', unlocked: true },
-          { id: 'momentum', title: 'Building Momentum', description: '3 days consistent.', icon: '🔥', unlocked: true }
+          { id: 'fresh_start', title: 'First Step', description: 'Started learning journey.', icon: 'sprout', unlocked: true },
+          { id: 'momentum', title: 'Building Momentum', description: '3 days consistent.', icon: 'flame', unlocked: true }
         ]
       }
     },
 
     // Application Info
     async getAppVersion() {
-      return '0.1.1'
+      return APP_CONFIG.version
     }
   }
 }
