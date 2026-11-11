@@ -1,0 +1,224 @@
+name: Release Cross-Platform Installers
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify Version & Quality Gates
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check-version.outputs.version }}
+    steps:
+      - name: Checkout Tag
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Verify Tag Matches package.json & appConfig.ts
+        id: check-version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          APP_CFG_VERSION=$(node -e "const fs=require('fs'); const m=fs.readFileSync('src/shared/appConfig.ts','utf8').match(/version:\s*'([^']+)'/); console.log(m ? m[1] : '');")
+          echo "Tag version: $TAG_VERSION"
+          echo "package.json version: $PKG_VERSION"
+          echo "appConfig.ts version: $APP_CFG_VERSION"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ] || [ "$TAG_VERSION" != "$APP_CFG_VERSION" ]; then
+            echo "::error::Version mismatch: git tag ($TAG_VERSION), package.json ($PKG_VERSION), appConfig.ts ($APP_CFG_VERSION)"
+            exit 1
+          fi
+          echo "version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run TypeScript Type Check
+        run: npm run typecheck
+
+      - name: Run Automated Test Suite
+        run: npm test
+
+      - name: Build Production Bundles
+        run: npm run build
+
+  build-windows:
+    name: Package Windows (NSIS & Portable x64)
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Production Bundles
+        run: npm run build
+
+      - name: Package Windows Installers
+        shell: pwsh
+        env:
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CSC_LINK)) {
+            Remove-Item Env:CSC_LINK -ErrorAction SilentlyContinue
+            Remove-Item Env:CSC_KEY_PASSWORD -ErrorAction SilentlyContinue
+            $env:CSC_IDENTITY_AUTO_DISCOVERY = "false"
+          }
+          npx electron-builder --win --publish never
+          $exes = Get-ChildItem -Path release -Filter "*.exe" -File
+          if ($exes.Count -lt 2) {
+            throw "Expected both Setup and Portable .exe installers; found $($exes.Count)"
+          }
+
+      - name: Upload Windows Release Assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: |
+            release/*.exe
+            release/*.blockmap
+          if-no-files-found: error
+          retention-days: 7
+
+  build-macos:
+    name: Package macOS (DMG & ZIP x64 + arm64)
+    needs: verify
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Production Bundles
+        run: npm run build
+
+      - name: Package macOS Installers
+        env:
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$CSC_LINK" ]; then
+            unset CSC_LINK
+            unset CSC_KEY_PASSWORD
+            unset APPLE_ID
+            unset APPLE_APP_SPECIFIC_PASSWORD
+            unset APPLE_TEAM_ID
+            export CSC_IDENTITY_AUTO_DISCOVERY=false
+          fi
+          npx electron-builder --mac --publish never
+          ls -lh release/*.dmg release/*.zip
+
+      - name: Upload macOS Release Assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.blockmap
+          if-no-files-found: error
+          retention-days: 7
+
+  build-linux:
+    name: Package Linux (AppImage, DEB & RPM x64)
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Linux Packaging Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libarchive-tools \
+            libnotify-bin \
+            libnss3 \
+            rpm
+          sudo apt-get install -y --no-install-recommends libasound2t64 2>/dev/null || sudo apt-get install -y --no-install-recommends libasound2 || true
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Production Bundles
+        run: npm run build
+
+      - name: Package Linux Installers
+        run: |
+          npx electron-builder --linux --publish never
+          ls -lh release/*.AppImage release/*.deb release/*.rpm
+
+      - name: Upload Linux Release Assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-release:
+    name: Verify Checksums & Publish GitHub Release
+    needs: [verify, build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Platform Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect Assets & Generate SHA-256 Checksums
+        run: |
+          mkdir -p dist-release
+          find artifacts -maxdepth 2 -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" -o -name "*.blockmap" \) -exec mv {} dist-release/ \;
+          (
+            cd dist-release
+            sha256sum *.exe *.dmg *.zip *.AppImage *.deb *.rpm > SHA256SUMS.txt
+          )
+          cat dist-release/SHA256SUMS.txt
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Selah ${{ needs.verify.outputs.version }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: dist-release/*
+

@@ -163,7 +163,7 @@ export function createDatabaseBackup(): string | null {
 
     // Maintain a rolling window of the last 5 automated backups
     const existing = readdirSync(backupsDir)
-      .filter(f => f.startsWith('hello11824-backup-') && f.endsWith('.sqlite'))
+      .filter(f => (f.startsWith('selah-backup-') || f.startsWith('hello11824-backup-')) && f.endsWith('.sqlite'))
       .sort()
       .reverse()
 
@@ -236,7 +236,7 @@ export function initDatabase(): Database.Database {
     let recovered = false
     if (existsSync(backupsDir)) {
       const backups = readdirSync(backupsDir)
-        .filter(f => f.startsWith('hello11824-backup-') && f.endsWith('.sqlite'))
+        .filter(f => (f.startsWith('selah-backup-') || f.startsWith('hello11824-backup-')) && f.endsWith('.sqlite'))
         .sort()
         .reverse()
       if (backups[0]) {

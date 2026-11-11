@@ -25,12 +25,13 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            target: Windows (x64 NSIS)
+            target: Windows (x64 NSIS + Portable)
             platform: win
             artifact_name: selah-windows-x64
             artifact_patterns: |
               release/*.exe
               release/*.blockmap
+              release/SHA256SUMS-windows.txt
 
           - os: macos-latest
             target: macOS (x64 + arm64 DMG/ZIP)
@@ -40,14 +41,17 @@ jobs:
               release/*.dmg
               release/*.zip
               release/*.blockmap
+              release/SHA256SUMS-macos.txt
 
           - os: ubuntu-latest
-            target: Linux (x64 AppImage + DEB)
+            target: Linux (x64 AppImage + DEB + RPM)
             platform: linux
             artifact_name: selah-linux-x64
             artifact_patterns: |
               release/*.AppImage
               release/*.deb
+              release/*.rpm
+              release/SHA256SUMS-linux.txt
 
     steps:
       - name: Checkout Source Code
@@ -66,7 +70,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             libarchive-tools \
             libnotify-bin \
-            libnss3
+            libnss3 \
+            rpm
           sudo apt-get install -y --no-install-recommends libasound2t64 2>/dev/null || sudo apt-get install -y --no-install-recommends libasound2 || true
 
       - name: Install Node Dependencies (Reproducible)
@@ -81,14 +86,22 @@ jobs:
       - name: Build Electron & Vite Bundles
         run: npm run build
 
-      - name: Package Windows (NSIS Installer)
+      - name: Package Windows (NSIS & Portable)
         if: matrix.platform == 'win'
-        run: npx electron-builder --win --publish never
+        shell: pwsh
+        run: |
+          npx electron-builder --win --publish never
+          $files = Get-ChildItem -Path release -File | Where-Object { $_.Extension -in '.exe', '.msi' }
+          if (-not $files) { throw "No Windows installer artifacts produced" }
+          $lines = foreach ($f in $files) {
+            $h = (Get-FileHash -Path $f.FullName -Algorithm SHA256).Hash.ToLower()
+            "$h  $($f.Name)"
+          }
+          $lines | Out-File -FilePath release/SHA256SUMS-windows.txt -Encoding utf8
 
-      - name: Package macOS (DMG & ZIP)
+      - name: Package macOS (DMG & ZIP for x64 + arm64)
         if: matrix.platform == 'mac'
         run: |
-          # If a macOS codesigning certificate is provided in secrets, configure it; otherwise explicitly build unsigned
           if [ -n "${{ secrets.MAC_CSC_LINK }}" ]; then
             export CSC_LINK="${{ secrets.MAC_CSC_LINK }}"
             export CSC_KEY_PASSWORD="${{ secrets.MAC_CSC_KEY_PASSWORD }}"
@@ -104,10 +117,13 @@ jobs:
             export CSC_IDENTITY_AUTO_DISCOVERY=false
           fi
           npx electron-builder --mac --publish never
+          (cd release && shasum -a 256 *.dmg *.zip > SHA256SUMS-macos.txt)
 
-      - name: Package Linux (AppImage & DEB)
+      - name: Package Linux (AppImage, DEB & RPM)
         if: matrix.platform == 'linux'
-        run: npx electron-builder --linux --publish never
+        run: |
+          npx electron-builder --linux --publish never
+          (cd release && sha256sum *.AppImage *.deb *.rpm > SHA256SUMS-linux.txt)
 
       - name: Upload Packaged Installers as Workflow Artifacts
         uses: actions/upload-artifact@v4

@@ -14,11 +14,14 @@ test('Cross-Platform: package.json has complete Windows, macOS, and Linux build 
   // Common metadata
   assert.equal(build.appId, 'com.selah.desktop')
   assert.equal(build.productName, 'Selah')
+  assert.equal(build.npmRebuild, true)
   assert.ok(build.asarUnpack && build.asarUnpack.includes('node_modules/better-sqlite3/**/*'))
 
   // Windows build target
   assert.ok(build.win, 'Windows configuration must exist')
-  assert.ok(build.win.target && build.win.target.some(t => t.target === 'nsis'))
+  const winTargets = build.win.target.map(t => t.target)
+  assert.ok(winTargets.includes('nsis'), 'Windows target must include nsis')
+  assert.ok(winTargets.includes('portable'), 'Windows target must include portable')
   assert.ok(build.nsis, 'NSIS configuration must exist')
 
   // macOS build target
@@ -39,13 +42,34 @@ test('Cross-Platform: package.json has complete Windows, macOS, and Linux build 
   const linuxTargets = build.linux.target.map(t => t.target)
   assert.ok(linuxTargets.includes('AppImage'), 'Linux target must include AppImage')
   assert.ok(linuxTargets.includes('deb'), 'Linux target must include deb')
+  assert.ok(linuxTargets.includes('rpm'), 'Linux target must include rpm')
 
   // NPM scripts
   assert.ok(pkg.scripts['package:win'], 'package:win script must exist')
+  assert.ok(pkg.scripts['package:win:portable'], 'package:win:portable script must exist')
   assert.ok(pkg.scripts['package:mac'], 'package:mac script must exist')
   assert.ok(pkg.scripts['package:linux'], 'package:linux script must exist')
   assert.ok(pkg.scripts['package:all'], 'package:all script must exist')
   assert.ok(pkg.scripts['clean'], 'clean script must exist')
+})
+
+test('Cross-Platform: GitHub release workflow and SQLite backup persistence are configured', () => {
+  const releaseWorkflowPath = resolve('.github/workflows/release.yml')
+  assert.ok(existsSync(releaseWorkflowPath), '.github/workflows/release.yml must exist')
+  const releaseWorkflow = readFileSync(releaseWorkflowPath, 'utf8')
+  assert.ok(releaseWorkflow.includes('windows-latest'), 'Release workflow must build on windows-latest')
+  assert.ok(releaseWorkflow.includes('macos-latest'), 'Release workflow must build on macos-latest')
+  assert.ok(releaseWorkflow.includes('ubuntu-latest'), 'Release workflow must build on ubuntu-latest')
+  assert.ok(releaseWorkflow.includes('SHA256SUMS.txt'), 'Release workflow must generate SHA256SUMS.txt')
+  assert.ok(releaseWorkflow.includes('softprops/action-gh-release'), 'Release workflow must publish release assets')
+
+  const dbPath = resolve('src/main/db.ts')
+  const dbCode = readFileSync(dbPath, 'utf8')
+  const appConfigPath = resolve('src/shared/appConfig.ts')
+  const appConfigCode = readFileSync(appConfigPath, 'utf8')
+  assert.ok(dbCode.includes("'selah-backup-'"), 'DB backup logic must match selah-backup- snapshots')
+  assert.ok(dbCode.includes('APP_CONFIG.databaseName'), 'DB must resolve filename via APP_CONFIG.databaseName')
+  assert.ok(appConfigCode.includes("databaseName: 'selah.sqlite'"), 'APP_CONFIG must define selah.sqlite')
 })
 
 test('Cross-Platform: entitlements.mac.plist has valid security keys for native SQLite', () => {

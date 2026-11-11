@@ -15,7 +15,8 @@
     "test": "electron test/runner.mjs",
     "clean": "node -e \"const fs = require('fs'); ['release', 'out'].forEach(d => { try { fs.rmSync(d, { recursive: true, force: true }); } catch {} });\"",
     "clean:win": "powershell -Command \"Remove-Item -Recurse -Force release, out -ErrorAction SilentlyContinue\"",
-    "package:win": "powershell -Command \"Get-Process -Name 'Selah', 'electron' -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 300; Remove-Item -Recurse -Force release -ErrorAction SilentlyContinue; exit 0\" && npm run build && electron-builder --win nsis",
+    "package:win": "powershell -Command \"Get-Process -Name 'Selah', 'electron' -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 300; Remove-Item -Recurse -Force release -ErrorAction SilentlyContinue; exit 0\" && npm run build && electron-builder --win",
+    "package:win:portable": "npm run build && electron-builder --win portable",
     "package:mac": "npm run build && electron-builder --mac",
     "package:linux": "npm run build && electron-builder --linux",
     "package:all": "npm run build && electron-builder -mwl"
@@ -67,6 +68,7 @@
         "to": "icon.png"
       }
     ],
+    "npmRebuild": true,
     "asarUnpack": [
       "node_modules/better-sqlite3/**/*"
     ],
@@ -75,6 +77,12 @@
       "target": [
         {
           "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
           "arch": [
             "x64"
           ]
@@ -87,12 +95,17 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico"
+      "uninstallerIcon": "build/icon.ico",
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"
     },
     "mac": {
       "icon": "build/icon.png",
       "category": "public.app-category.education",
       "executableName": "Selah",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
       "target": [
         {
           "target": "dmg",
@@ -136,6 +149,7 @@
       "icon": "build/icon.png",
       "category": "Education",
       "maintainer": "Kaliza Esther <kalizaesther5@gmail.com>",
+      "artifactName": "${name}-${version}-${arch}.${ext}",
       "target": [
         {
           "target": "AppImage",
@@ -145,6 +159,12 @@
         },
         {
           "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "rpm",
           "arch": [
             "x64"
           ]
@@ -163,6 +183,14 @@
         "libnss3",
         "libasound2 | libasound2t64",
         "libsecret-1-0"
+      ]
+    },
+    "rpm": {
+      "depends": [
+        "libnotify",
+        "nss",
+        "alsa-lib",
+        "libsecret"
       ]
     }
   }

@@ -740,87 +740,99 @@
   <!-- Platform Downloads Section -->
   <section id="downloads" class="platforms-section">
     <div class="container">
-      <h2 class="section-title">Download Selah</h2>
-      <p class="section-sub">Choose the installer for your operating system from the latest GitHub release.</p>
+      <h2 class="section-title">Download Selah <span id="selah-release-version" style="font-size: 1rem; color: var(--accent-soft); font-weight: 600;"></span></h2>
+      <p class="section-sub">Choose the installer for your operating system from the latest GitHub release (<a id="selah-checksum-link" href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" target="_blank" rel="noopener noreferrer">SHA256SUMS &amp; Release Notes</a>).</p>
 
       <div class="platforms-grid">
         <!-- Windows -->
-        <div class="platform-card">
+        <div class="platform-card" data-os-card="windows">
           <div>
             <div class="platform-header">
               <div class="platform-icon">WIN</div>
               <div>
                 <div class="platform-title">Windows</div>
-                <div class="platform-reqs">Windows 10 / 11 (64-bit)</div>
+                <div class="platform-reqs">Windows 10 / 11 (64-bit x64)</div>
               </div>
             </div>
             <p class="platform-desc">
-              Standard NSIS setup executable with desktop shortcuts, Start Menu integration, and auto-update support.
+              NSIS installer with Start Menu integration or standalone Portable executable. User SQLite data stays safely in %APPDATA%\Selah.
             </p>
           </div>
           <div class="download-btns">
-            <a href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" class="dl-btn featured">
+            <a data-asset-role="win-setup" href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" class="dl-btn featured">
               <span>Setup Installer (.exe)</span>
+              <span class="btn-badge">x64</span>
+            </a>
+            <a data-asset-role="win-portable" href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" class="dl-btn">
+              <span>Portable Executable (.exe)</span>
               <span class="btn-badge">x64</span>
             </a>
           </div>
         </div>
 
         <!-- macOS -->
-        <div class="platform-card">
+        <div class="platform-card" data-os-card="macos">
           <div>
             <div class="platform-header">
               <div class="platform-icon">MAC</div>
               <div>
                 <div class="platform-title">macOS</div>
-                <div class="platform-reqs">macOS 11 (Big Sur) or newer</div>
+                <div class="platform-reqs">macOS 12 Monterey or newer</div>
               </div>
             </div>
             <p class="platform-desc">
-              Universal builds supporting both Apple Silicon (M1/M2/M3/M4) and Intel x64 architectures.
+              Disk image (.dmg) and ZIP builds for Apple Silicon (M1/M2/M3/M4) and Intel (x64) architectures.
             </p>
           </div>
           <div class="download-btns">
-            <a href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" class="dl-btn featured">
-              <span>Apple Disk Image (.dmg)</span>
-              <span class="btn-badge">Universal</span>
+            <a data-asset-role="mac-arm64-dmg" href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" class="dl-btn featured">
+              <span>Apple Silicon (.dmg)</span>
+              <span class="btn-badge">arm64</span>
             </a>
-            <a href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" class="dl-btn">
-              <span>Portable Archive (.zip)</span>
-              <span class="btn-badge">Universal</span>
+            <a data-asset-role="mac-x64-dmg" href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" class="dl-btn">
+              <span>Intel Mac (.dmg)</span>
+              <span class="btn-badge">x64</span>
+            </a>
+            <a data-asset-role="mac-zip" href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" class="dl-btn">
+              <span>Archive (.zip)</span>
+              <span class="btn-badge">macOS</span>
             </a>
           </div>
         </div>
 
         <!-- Linux -->
-        <div class="platform-card">
+        <div class="platform-card" data-os-card="linux">
           <div>
             <div class="platform-header">
               <div class="platform-icon">LNX</div>
               <div>
                 <div class="platform-title">Linux</div>
-                <div class="platform-reqs">Ubuntu, Debian, Fedora, Arch (64-bit)</div>
+                <div class="platform-reqs">Ubuntu, Debian, Fedora, Arch (x64)</div>
               </div>
             </div>
             <p class="platform-desc">
-              Standalone AppImage (works on any modern distro) and Debian/Ubuntu package with desktop menu entry.
+              Standalone AppImage, Debian/Ubuntu (.deb), and Fedora/RHEL (.rpm) packages with desktop integration.
             </p>
           </div>
           <div class="download-btns">
-            <a href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" class="dl-btn featured">
+            <a data-asset-role="linux-appimage" href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" class="dl-btn featured">
               <span>Standalone AppImage</span>
               <span class="btn-badge">x64</span>
             </a>
-            <a href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" class="dl-btn">
+            <a data-asset-role="linux-deb" href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" class="dl-btn">
               <span>Debian Package (.deb)</span>
+              <span class="btn-badge">x64</span>
+            </a>
+            <a data-asset-role="linux-rpm" href="https://github.com/Kaliza-e/Hello_118_24/releases/latest" class="dl-btn">
+              <span>Fedora / RHEL (.rpm)</span>
               <span class="btn-badge">x64</span>
             </a>
           </div>
         </div>
       </div>
 
-      <div style="font-size: 0.85rem; color: #94a3b8; max-width: 700px; margin: 0 auto;">
-        * Community builds are built automatically via GitHub Actions. If Windows SmartScreen or macOS Gatekeeper displays an unknown publisher prompt, verify the checksums on the GitHub Release page.
+      <div style="font-size: 0.85rem; color: #94a3b8; max-width: 740px; margin: 0 auto;">
+        Unsigned community builds may show a Windows SmartScreen or macOS Gatekeeper prompt on first run. Verify file hashes against SHA256SUMS.txt on GitHub Releases before launching.
       </div>
     </div>
   </section>
@@ -833,37 +845,37 @@
 
       <div class="features-grid">
         <div class="feature-card">
-          <div class="feature-icon">⚡</div>
+          <div class="feature-icon" style="font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em;">GAP</div>
           <div class="feature-title">Smart Free-Time Engine</div>
           <p class="feature-text">Automatically identifies gaps between classes and recommends realistic tasks you can finish or make progress on during your breaks.</p>
         </div>
 
         <div class="feature-card">
-          <div class="feature-icon">📄</div>
+          <div class="feature-icon" style="font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em;">DOC</div>
           <div class="feature-title">Multi-Format Timetable Import</div>
           <p class="feature-text">Import your schedule from PDF documents, Word (.docx) files, or screenshot images. Includes built-in OCR and a review modal before saving.</p>
         </div>
 
         <div class="feature-card">
-          <div class="feature-icon">🌅</div>
+          <div class="feature-icon" style="font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em;">DAY</div>
           <div class="feature-title">Tomorrow Planning & Rollover</div>
           <p class="feature-text">Dedicate 2 minutes at the end of the day to roll over unfinished tasks to tomorrow and check off packed materials (backpack, charger, lab tools).</p>
         </div>
 
         <div class="feature-card">
-          <div class="feature-icon">📌</div>
+          <div class="feature-icon" style="font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em;">PIN</div>
           <div class="feature-title">Floating Widget & Tray Mode</div>
           <p class="feature-text">Pin the widget to your desktop corner so your next class is always visible. Easily switch between standard mode and ultra-compact mode.</p>
         </div>
 
         <div class="feature-card">
-          <div class="feature-icon">💾</div>
+          <div class="feature-icon" style="font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em;">SQL</div>
           <div class="feature-title">Local SQLite Persistence</div>
           <p class="feature-text">Zero reliance on third-party servers. Your timetable and to-dos are stored safely in an ACID-compliant local SQLite database with automated rolling backups.</p>
         </div>
 
         <div class="feature-card">
-          <div class="feature-icon">🎨</div>
+          <div class="feature-icon" style="font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em;">UI</div>
           <div class="feature-title">Midnight Lavender & Light Theme</div>
           <p class="feature-text">Tailored color palettes designed to minimize eye fatigue during long study sessions, with one-click toggle between Dark and Light mode.</p>
         </div>
@@ -920,5 +932,67 @@
     </div>
   </footer>
 
+  <script>
+    (function () {
+      var ua = (navigator.userAgent + ' ' + (navigator.platform || '')).toLowerCase();
+      var os = ua.indexOf('mac') >= 0 || ua.indexOf('darwin') >= 0
+        ? 'macos'
+        : (ua.indexOf('linux') >= 0 && ua.indexOf('android') < 0 ? 'linux' : 'windows');
+
+      var activeCard = document.querySelector('[data-os-card="' + os + '"]');
+      if (activeCard) {
+        activeCard.style.borderColor = '#8b5cf6';
+        activeCard.style.boxShadow = '0 0 0 1px rgba(139, 92, 246, 0.35)';
+      }
+
+      fetch('https://api.github.com/repos/Kaliza-e/Hello_118_24/releases/latest', {
+        headers: { Accept: 'application/vnd.github+json' }
+      })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (rel) {
+          if (!rel || !Array.isArray(rel.assets)) return;
+          var verEl = document.getElementById('selah-release-version');
+          if (verEl && rel.tag_name) verEl.textContent = '(' + rel.tag_name + ')';
+
+          var findAsset = function (pred) {
+            for (var i = 0; i < rel.assets.length; i++) {
+              var a = rel.assets[i];
+              var n = String(a.name || '').toLowerCase();
+              if (!n.endsWith('.blockmap') && pred(n)) return a;
+            }
+            return null;
+          };
+
+          var checksumAsset = findAsset(function (n) { return n === 'sha256sums.txt'; });
+          var checksumLink = document.getElementById('selah-checksum-link');
+          if (checksumAsset && checksumLink) checksumLink.href = checksumAsset.browser_download_url;
+
+          var roleMap = {
+            'win-setup': findAsset(function (n) { return n.endsWith('.exe') && n.indexOf('portable') < 0; }),
+            'win-portable': findAsset(function (n) { return n.endsWith('.exe') && n.indexOf('portable') >= 0; }),
+            'mac-arm64-dmg': findAsset(function (n) { return n.endsWith('.dmg') && n.indexOf('arm64') >= 0; }),
+            'mac-x64-dmg': findAsset(function (n) { return n.endsWith('.dmg') && n.indexOf('arm64') < 0; }),
+            'mac-zip': findAsset(function (n) { return n.endsWith('.zip') && (n.indexOf('mac') >= 0 || n.indexOf('selah') >= 0); }),
+            'linux-appimage': findAsset(function (n) { return n.endsWith('.appimage'); }),
+            'linux-deb': findAsset(function (n) { return n.endsWith('.deb'); }),
+            'linux-rpm': findAsset(function (n) { return n.endsWith('.rpm'); })
+          };
+
+          Object.keys(roleMap).forEach(function (role) {
+            var el = document.querySelector('[data-asset-role="' + role + '"]');
+            var asset = roleMap[role];
+            if (!el) return;
+            if (asset && asset.browser_download_url) {
+              el.href = asset.browser_download_url;
+            } else if (rel.html_url) {
+              el.href = rel.html_url;
+            }
+          });
+        })
+        .catch(function () {
+          // Keep static fallback links pointing to GitHub Releases
+        });
+    })();
+  </script>
 </body>
 </html>

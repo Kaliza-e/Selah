@@ -786,7 +786,7 @@ if (gotSingleInstanceLock) {
       if (app.isPackaged) {
         dialog.showErrorBox(
           `${APP_CONFIG.name} - Startup Initialization Failed`,
-          `A critical error occurred while starting the application:\n\n${err instanceof Error ? err.stack || err.message : String(err)}\n\nPlease check the logs in:\n${userDataPath}\\logs\\app.log`
+          `A critical error occurred while starting the application:\n\n${err instanceof Error ? err.stack || err.message : String(err)}\n\nPlease check the logs in:\n${join(userDataPath, 'logs', 'app.log')}`
         )
       }
     }

@@ -117,7 +117,7 @@ npm install
 # 2. Run TypeScript typecheck
 npm run typecheck
 
-# 3. Run automated tests (96/96 tests pass)
+# 3. Run automated tests
 npm test
 
 # 4. Start the app in development mode
@@ -129,21 +129,32 @@ npm run build
 
 ---
 
-## Cross-Platform Packaging
+## Cross-Platform Packaging & Supported Targets
+
+| OS | Architecture | Package Formats | CI Runner |
+| --- | --- | --- | --- |
+| Windows 10/11 | `x64` | NSIS Installer (`.exe`), Portable (`.exe`) | `windows-latest` |
+| macOS 12+ | `arm64`, `x64` | Disk Image (`.dmg`), Archive (`.zip`) | `macos-latest` |
+| Linux | `x64` | `.AppImage`, `.deb`, `.rpm` | `ubuntu-latest` |
 
 ```powershell
-# Windows NSIS installer
+# Windows NSIS installer + Portable executable
 npm run package:win
 
-# macOS DMG & ZIP (on macOS runner or CI)
+# Windows Portable executable only
+npm run package:win:portable
+
+# macOS arm64 & x64 DMG + ZIP (run on macOS or GitHub Actions)
 npm run package:mac
 
-# Linux AppImage & DEB (on Linux runner or CI)
+# Linux AppImage, DEB & RPM (run on Linux with rpmbuild or GitHub Actions)
 npm run package:linux
 ```
 
-This compiles production assets and generates:
-1. **Windows Installer**: `release/Selah Setup 0.1.2.exe`
-2. **macOS**: `release/Selah-0.1.2.dmg` and `release/Selah-0.1.2-mac.zip`
-3. **Linux**: `release/Selah-0.1.2.AppImage` and `release/selah_0.1.2_amd64.deb`
+Generated artifacts in `daylight-desktop/release/`:
+1. **Windows (`x64`)**: `Selah-Setup-0.1.2-x64.exe` and `Selah-Portable-0.1.2-x64.exe`
+2. **macOS (`arm64` / `x64`)**: `Selah-0.1.2-arm64.dmg`, `Selah-0.1.2-x64.dmg`, `Selah-0.1.2-arm64.zip`, `Selah-0.1.2-x64.zip`
+3. **Linux (`x64`)**: `selah-0.1.2-x64.AppImage`, `selah-0.1.2-x64.deb`, `selah-0.1.2-x64.rpm`
+
+See [DISTRIBUTION.md](./DISTRIBUTION.md) for code signing secrets, checksum verification (`SHA256SUMS.txt`), ARM64 support notes, and the full tag release checklist.
 4. **Unpacked Executable**: `release/win-unpacked/Selah.exe`
