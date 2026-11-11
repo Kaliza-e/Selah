@@ -21,6 +21,8 @@ interface SettingsViewProps {
   onThemeChange: (theme: 'dark' | 'light') => void
   uiScale: '90' | '100' | '115' | '130'
   onUiScaleChange: (scale: '90' | '100' | '115' | '130') => void
+  userName: string
+  onUserNameChange: (name: string) => void
   onRefreshAll: () => Promise<void>
   onShowMessage: (msg: string) => void
 }
@@ -34,6 +36,8 @@ export function SettingsView({
   onThemeChange,
   uiScale,
   onUiScaleChange,
+  userName,
+  onUserNameChange,
   onRefreshAll,
   onShowMessage
 }: SettingsViewProps) {
@@ -271,8 +275,33 @@ export function SettingsView({
     <div className="settings-grid-layout">
       {/* ================= LEFT COLUMN ================= */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Appearance Group */}
+        {/* Profile & Greeting Group */}
         <div className="settings-group">
+          <span className="section-sublabel" style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>
+            Profile &amp; Greeting
+          </span>
+
+          <div className="setting-toggle-row">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span className="setting-title">Your Name</span>
+              <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
+                Used for your personalized Home greeting
+              </span>
+            </div>
+            <input
+              type="text"
+              className="input-field"
+              style={{ width: 160, padding: '5px 10px', fontSize: 12 }}
+              placeholder="e.g. Esther"
+              value={userName}
+              onChange={e => onUserNameChange(e.target.value)}
+              aria-label="Your name"
+            />
+          </div>
+        </div>
+
+        {/* Appearance Group */}
+        <div className="settings-group" style={{ paddingTop: 4, borderTop: '1px solid var(--border-subtle)' }}>
           <span className="section-sublabel" style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>
             Appearance & Theme
           </span>

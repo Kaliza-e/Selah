@@ -5,13 +5,13 @@ import {
   Check,
   Plus,
   ExternalLink,
-  Heart,
   Play,
   Timer,
   Clock,
-  Sparkles
+  CalendarDays,
+  AlertCircle
 } from 'lucide-react'
-import { Task, ClassItem, ActiveTab, toDateKey } from '../types'
+import { Task, ClassItem, ScheduleEvent, ActiveTab, toDateKey } from '../types'
 import { FreeTimeBanner } from './FreeTimeBanner'
 import { FaithJournalCard } from './FaithJournalCard'
 import { ExamCountdownCard } from './ExamCountdownCard'
@@ -22,6 +22,7 @@ interface TodayViewProps {
   today: Date
   classes: ClassItem[]
   tasks: Task[]
+  userName?: string
   isCompact?: boolean
   onToggleTask: (task: Task) => void
   onNavigate: (tab: ActiveTab) => void
@@ -49,6 +50,7 @@ export function TodayView({
   today,
   classes,
   tasks,
+  userName: propUserName,
   isCompact = false,
   onToggleTask,
   onNavigate,
@@ -64,13 +66,31 @@ export function TodayView({
 }: TodayViewProps) {
   const todayKey = toDateKey(today)
   const todayWeekday = today.getDay()
-  const [userName, setUserName] = useState<string>('')
+  const [localUserName, setLocalUserName] = useState<string>('')
+  const [todaysEvents, setTodaysEvents] = useState<ScheduleEvent[]>([])
 
   useEffect(() => {
-    window.hello11824?.getSetting?.('user_name').then(val => {
-      if (val && typeof val === 'string') setUserName(val.trim())
-    })
-  }, [])
+    if (propUserName === undefined) {
+      window.hello11824?.getSetting?.('user_name').then(val => {
+        if (val && typeof val === 'string') setLocalUserName(val.trim())
+      })
+    }
+  }, [propUserName])
+
+  useEffect(() => {
+    window.hello11824?.listScheduleEvents?.({
+      startDate: todayKey,
+      endDate: todayKey
+    }).then(evts => {
+      if (Array.isArray(evts)) setTodaysEvents(evts)
+    }).catch(() => {})
+  }, [todayKey])
+
+  const effectiveUserName = (propUserName !== undefined ? propUserName : localUserName).trim()
+
+  const overdueCount = useMemo(() => {
+    return tasks.filter(t => isTaskOverdue(t.due_date, t.due_time, t.completed, today)).length
+  }, [tasks, today])
 
   // Format date: "Mon, Oct 26, 2026"
   const formattedDate = useMemo(() => {
@@ -102,8 +122,8 @@ export function TodayView({
   const greeting = useMemo(() => {
     const hour = today.getHours()
     const prefix = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
-    return userName ? `${prefix}, ${userName}` : prefix
-  }, [today, userName])
+    return effectiveUserName ? `${prefix}, ${effectiveUserName}` : prefix
+  }, [today, effectiveUserName])
 
   // Today's classes
   const todaysSubjects = useMemo(() => {
@@ -254,44 +274,56 @@ export function TodayView({
   // ================= FULL APPLICATION DASHBOARD LAYOUT =================
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Top Banner Row: Greeting + Inspiration Card */}
-      <div className="responsive-grid-hero">
+      {/* Top Banner Row: Greeting, Summary & Quick Actions */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         {/* Left: Greeting & Date */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, justifyContent: 'center' }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.3px', margin: 0 }}>
             {greeting}
           </h1>
-          <span style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
-            {formattedDate} • Week {weekNumber}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 12.5, color: 'var(--text-secondary)' }}>
+            <span>{formattedDate} • Week {weekNumber}</span>
+            {overdueCount > 0 && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '2px 8px',
+                  borderRadius: 9999,
+                  background: 'rgba(244, 63, 94, 0.14)',
+                  color: '#f43f5e',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+                onClick={() => onNavigate('tasks')}
+                title="View overdue tasks"
+              >
+                <AlertCircle size={11} /> {overdueCount} overdue
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Right: Motivation Card */}
-        <div
-          style={{
-            background: 'var(--bg-quote)',
-            border: '1px solid var(--border-card)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '14px 16px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>You're doing great!</span>
-              <Sparkles size={13} color="var(--accent-purple)" />
-            </div>
-            <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.4 }}>
-              Keep going, your goals are within reach.
-            </p>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6, color: 'var(--accent-purple)' }}>
-            <Heart size={14} fill="var(--accent-purple)" color="var(--accent-purple)" />
-          </div>
+        {/* Right: Quick Action Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn-primary-pill"
+            style={{ background: 'var(--accent-purple-btn)', fontSize: 12, padding: '7px 14px' }}
+            onClick={onOpenTaskModal}
+          >
+            <Plus size={14} /> New Task
+          </button>
+          <button
+            type="button"
+            className="btn-secondary-pill"
+            style={{ fontSize: 12, padding: '7px 12px' }}
+            onClick={() => onNavigate('schedules')}
+          >
+            <CalendarDays size={13} /> Schedules
+          </button>
         </div>
       </div>
 
@@ -389,15 +421,15 @@ export function TodayView({
             </button>
           </div>
 
-          {todaysSubjects.length === 0 ? (
+          {todaysSubjects.length === 0 && todaysEvents.length === 0 ? (
             <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic', padding: '24px 0', textAlign: 'center' }}>
-              No classes scheduled for today. Enjoy your day!
+              No classes or events scheduled for today.
             </div>
           ) : (
             <div className="classes-mini-list" style={{ gap: 6 }}>
               {todaysSubjects.map((c, i) => (
                 <div
-                  key={c.id || i}
+                  key={`class-${c.id || i}`}
                   className="class-mini-row"
                   style={{
                     padding: '8px 10px',
@@ -456,6 +488,61 @@ export function TodayView({
                       {c.room}
                     </span>
                   )}
+                  <ChevronRight size={13} color="var(--text-muted)" style={{ marginLeft: 4, flexShrink: 0 }} />
+                </div>
+              ))}
+              {todaysEvents.map((ev, i) => (
+                <div
+                  key={`event-${ev.id || i}`}
+                  className="class-mini-row"
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--bg-card-inner)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    minWidth: 0,
+                    cursor: 'pointer'
+                  }}
+                  title={`${ev.title}${ev.location ? ` (${ev.location})` : ''}`}
+                  onClick={() => onNavigate('schedules')}
+                >
+                  <span className="class-mini-time" style={{ minWidth: 80, fontSize: 11.5, flexShrink: 0 }}>
+                    {ev.is_all_day ? 'All Day' : `${ev.start_time || ''}${ev.end_time ? ` – ${ev.end_time}` : ''}`}
+                  </span>
+                  <span
+                    className="class-dot"
+                    style={{ background: 'var(--accent-cyan)', flexShrink: 0 }}
+                  />
+                  <span
+                    className="class-mini-subject"
+                    style={{
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      flex: 1,
+                      minWidth: 0,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                    title={ev.title}
+                  >
+                    {ev.title}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      background: 'rgba(56, 189, 248, 0.14)',
+                      color: 'var(--accent-cyan)',
+                      fontWeight: 600,
+                      flexShrink: 0
+                    }}
+                  >
+                    {ev.category}
+                  </span>
                   <ChevronRight size={13} color="var(--text-muted)" style={{ marginLeft: 4, flexShrink: 0 }} />
                 </div>
               ))}

@@ -5,7 +5,6 @@ import {
   BarChart3,
   Settings as SettingsIcon,
   Home,
-  Heart,
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react'
@@ -35,6 +34,7 @@ export default function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [uiScale, setUiScale] = useState<'90' | '100' | '115' | '130'>('100')
+  const [userName, setUserName] = useState('')
   const [toast, setToast] = useState<ToastData | null>(null)
   const [today, setToday] = useState(new Date())
 
@@ -89,14 +89,15 @@ export default function App() {
       const api = window.hello11824
       if (!api) return
 
-      const [tList, cList, pinSetting, modeSetting, themeSetting, sidebarSetting, scaleSetting] = await Promise.all([
+      const [tList, cList, pinSetting, modeSetting, themeSetting, sidebarSetting, scaleSetting, nameSetting] = await Promise.all([
         api.listTasks(),
         api.listClasses(),
         api.getSetting('pinned'),
         api.getSetting('widget_mode'),
         api.getSetting('theme'),
         api.getSetting('sidebar_collapsed'),
-        api.getSetting('ui_scale')
+        api.getSetting('ui_scale'),
+        api.getSetting('user_name')
       ])
 
       setTasks(tList || [])
@@ -113,6 +114,9 @@ export default function App() {
       }
       if (scaleSetting === '90' || scaleSetting === '100' || scaleSetting === '115' || scaleSetting === '130') {
         setUiScale(scaleSetting)
+      }
+      if (typeof nameSetting === 'string') {
+        setUserName(nameSetting)
       }
       if (themeSetting === 'light' || themeSetting === 'dark') {
         setTheme(themeSetting)
@@ -191,6 +195,11 @@ export default function App() {
   const handleSetUiScale = useCallback(async (newScale: '90' | '100' | '115' | '130') => {
     setUiScale(newScale)
     await window.hello11824.setSetting('ui_scale', newScale)
+  }, [])
+
+  const handleSetUserName = useCallback(async (name: string) => {
+    setUserName(name)
+    await window.hello11824.setSetting('user_name', name.trim())
   }, [])
 
   const handleToggleTask = useCallback(
@@ -316,6 +325,7 @@ export default function App() {
             today={today}
             classes={classes}
             tasks={tasks}
+            userName={userName}
             isCompact={true}
             onToggleTask={handleToggleTask}
             onNavigate={tab => {
@@ -341,17 +351,8 @@ export default function App() {
         <div className="dashboard-layout">
           {/* Left Responsive Sidebar / Rail / Bottom Nav */}
           <aside className={`dashboard-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-            {/* Motivational Quote in Sidebar with Tagline */}
-            <div className="sidebar-quote-card">
-              <span className="sidebar-quote-tag">Plan • Study • Achieve</span>
-              <p>“Small steps every day create big results.”</p>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
-                <Heart size={12} fill="var(--accent-purple)" color="var(--accent-purple)" />
-              </div>
-            </div>
-
             {/* Consolidated 5-Item Navigation Links */}
-            <nav className="sidebar-nav-list" aria-label="Primary Navigation">
+            <nav className="sidebar-nav-list" aria-label="Primary Navigation" style={{ flex: 1 }}>
               <button
                 type="button"
                 className={`sidebar-nav-item ${activeTab === 'today' ? 'active' : ''}`}
@@ -403,14 +404,6 @@ export default function App() {
               </button>
             </nav>
 
-            {/* Bottom discipline quote + Collapse toggle */}
-            <div className="sidebar-footer-quote">
-              <p>“Discipline today builds the freedom you want tomorrow.”</p>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
-                <Heart size={12} color="var(--accent-purple)" />
-              </div>
-            </div>
-
             <button
               type="button"
               className="sidebar-collapse-btn"
@@ -430,6 +423,7 @@ export default function App() {
                 today={today}
                 classes={classes}
                 tasks={tasks}
+                userName={userName}
                 isCompact={false}
                 onToggleTask={handleToggleTask}
                 onNavigate={setActiveTab}
@@ -550,6 +544,8 @@ export default function App() {
                 onThemeChange={handleSetTheme}
                 uiScale={uiScale}
                 onUiScaleChange={handleSetUiScale}
+                userName={userName}
+                onUserNameChange={handleSetUserName}
                 onRefreshAll={async () => {
                   await Promise.all([refreshTasks(), refreshClasses()])
                 }}
