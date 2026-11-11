@@ -164,8 +164,9 @@ export function ScheduleEventModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {errorMsg && (
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body" style={{ padding: '16px 18px', gap: 14 }}>
+            {errorMsg && (
             <div style={{ padding: '8px 12px', background: 'rgba(239, 68, 68, 0.15)', color: 'var(--priority-high-text)', borderRadius: 6, fontSize: 12 }}>
               {errorMsg}
             </div>
@@ -391,8 +392,9 @@ export function ScheduleEventModal({
               )}
             </div>
           )}
+          </div>
 
-          <div className="modal-footer" style={{ padding: 0, marginTop: 8, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+          <div className="modal-footer">
             <button type="button" className="btn-secondary-pill" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </button>

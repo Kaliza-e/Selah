@@ -1162,7 +1162,8 @@ select.select-field option {
   min-height: 70px;
 }
 
-.modal-backdrop {
+.modal-backdrop,
+.modal-overlay {
   position: fixed;
   inset: 0;
   background: var(--modal-backdrop);
@@ -1171,19 +1172,32 @@ select.select-field option {
   align-items: center;
   justify-content: center;
   padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   z-index: 100;
 }
 
-.modal-content {
+.modal-content,
+.modal-container {
   background: var(--modal-bg);
   border: 1px solid var(--border-card);
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 500px;
-  max-height: 88vh;
+  max-height: min(88vh, calc(100vh - 32px));
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-modal);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.modal-content > form,
+.modal-container > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -1191,6 +1205,7 @@ select.select-field option {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
   padding: 14px 18px;
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -1202,17 +1217,39 @@ select.select-field option {
 }
 
 .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 18px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: rgba(167, 136, 250, 0.35);
+  border-radius: 999px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 136, 250, 0.6);
 }
 
 .modal-footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-shrink: 0;
   gap: 8px;
   padding: 12px 18px;
   border-top: 1px solid var(--border-subtle);
