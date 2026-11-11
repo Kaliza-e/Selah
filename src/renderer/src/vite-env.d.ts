@@ -1,5 +1,11 @@
 /// <reference types="vite/client" />
 
+export interface SubtaskItem {
+  id: string
+  title: string
+  done: boolean
+}
+
 export interface Task {
   id: number
   title: string
@@ -15,6 +21,8 @@ export interface Task {
   scheduled_time?: string | null
   scheduled_duration_minutes?: number | null
   total_time_spent_seconds?: number
+  recurrence_rule?: string | null
+  subtasks?: string | null
   created_at: string
 }
 
@@ -122,6 +130,8 @@ export interface HelloAPI {
   onModeChanged(callback: (mode?: 'compact' | 'standard') => void): () => void
   onPinnedChanged(callback: (pinned: boolean) => void): () => void
   onMaximizeChanged(callback: (isMax: boolean) => void): () => void
+  onShortcutQuickAdd?(callback: () => void): () => void
+  onShortcutStartFocus?(callback: () => void): () => void
 
   // Settings
   getSetting(key: string): Promise<string | null>
@@ -141,6 +151,8 @@ export interface HelloAPI {
     category?: string
     classId?: number
     estimatedMinutes?: number | null
+    recurrenceRule?: string | null
+    subtasks?: string | null
   }): Promise<Task>
   updateTask(id: number, payload: {
     title?: string
@@ -152,10 +164,13 @@ export interface HelloAPI {
     category?: string | null
     classId?: number | null
     estimatedMinutes?: number | null
+    recurrenceRule?: string | null
+    subtasks?: string | null
   }): Promise<Task>
   toggleTask(id: number, completed: boolean): Promise<boolean>
   deleteTask(id: number): Promise<boolean>
   rolloverTasks(fromDate: string, toDate: string): Promise<number>
+  rescheduleOverdueTasks(todayKey: string): Promise<number>
   scheduleTask(taskId: number, date: string, time?: string, durationMinutes?: number): Promise<Task>
 
   // Focus View & Timer
@@ -264,7 +279,7 @@ export interface HelloAPI {
 
   // Backup & Storage
   exportData(): Promise<boolean>
-  importData(): Promise<boolean>
+  importData(mode?: 'replace' | 'merge'): Promise<boolean>
   exportEncryptedData(passphrase: string): Promise<boolean>
   importEncryptedData(passphrase: string): Promise<boolean>
   clearData(options: { tasks?: boolean; classes?: boolean; plans?: boolean; schedules?: boolean }): Promise<boolean>

@@ -9,6 +9,8 @@ export interface TaskPayload {
   category?: string
   classId?: number
   estimatedMinutes?: number | null
+  recurrenceRule?: string | null
+  subtasks?: string | null
 }
 
 export interface TaskUpdatePayload {
@@ -21,6 +23,8 @@ export interface TaskUpdatePayload {
   category?: string | null
   classId?: number | null
   estimatedMinutes?: number | null
+  recurrenceRule?: string | null
+  subtasks?: string | null
 }
 
 export interface ClassPayload {
@@ -75,6 +79,16 @@ const api = {
     ipcRenderer.on('window:maximize-changed', handler)
     return () => ipcRenderer.removeListener('window:maximize-changed', handler)
   },
+  onShortcutQuickAdd: (callback: () => void) => {
+    const handler = () => callback()
+    ipcRenderer.on('shortcut:quick-add', handler)
+    return () => ipcRenderer.removeListener('shortcut:quick-add', handler)
+  },
+  onShortcutStartFocus: (callback: () => void) => {
+    const handler = () => callback()
+    ipcRenderer.on('shortcut:start-focus', handler)
+    return () => ipcRenderer.removeListener('shortcut:start-focus', handler)
+  },
 
   // Settings
   getSetting: (key: string) => ipcRenderer.invoke('settings:get', key),
@@ -90,6 +104,7 @@ const api = {
   toggleTask: (id: number, completed: boolean) => ipcRenderer.invoke('tasks:toggle', id, completed),
   deleteTask: (id: number) => ipcRenderer.invoke('tasks:delete', id),
   rolloverTasks: (fromDate: string, toDate: string) => ipcRenderer.invoke('tasks:rollover', fromDate, toDate),
+  rescheduleOverdueTasks: (todayKey: string) => ipcRenderer.invoke('tasks:reschedule-overdue', todayKey),
   scheduleTask: (taskId: number, date: string, time?: string, durationMinutes?: number) =>
     ipcRenderer.invoke('tasks:schedule', taskId, date, time, durationMinutes),
 
@@ -136,7 +151,8 @@ const api = {
 
   // Backup & Storage
   exportData: () => ipcRenderer.invoke('data:export'),
-  importData: () => ipcRenderer.invoke('data:import'),
+  importData: (mode: 'replace' | 'merge' = 'replace') =>
+    mode === 'merge' ? ipcRenderer.invoke('data:import-mode', 'merge') : ipcRenderer.invoke('data:import'),
   exportEncryptedData: (passphrase: string) => ipcRenderer.invoke('data:export-encrypted', passphrase),
   importEncryptedData: (passphrase: string) => ipcRenderer.invoke('data:import-encrypted', passphrase),
   clearData: (options: { tasks?: boolean; classes?: boolean; plans?: boolean; schedules?: boolean }) => ipcRenderer.invoke('data:clear', options),

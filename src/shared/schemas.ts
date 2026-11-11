@@ -13,7 +13,9 @@ export const TaskCreateSchema = z.object({
   classId: z.number().int().positive().optional().nullable(),
   estimatedMinutes: z.number().int().min(1).max(1440).optional().nullable(),
   scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
-  scheduledTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable()
+  scheduledTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
+  recurrenceRule: z.enum(['daily', 'weekdays', 'weekly', 'monthly']).optional().nullable(),
+  subtasks: z.string().max(10000).optional().nullable()
 })
 
 export const TaskUpdateSchema = z.object({
@@ -27,7 +29,9 @@ export const TaskUpdateSchema = z.object({
   classId: z.number().int().positive().optional().nullable(),
   estimatedMinutes: z.number().int().min(1).max(1440).optional().nullable(),
   scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
-  scheduledTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable()
+  scheduledTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
+  recurrenceRule: z.enum(['daily', 'weekdays', 'weekly', 'monthly']).optional().nullable(),
+  subtasks: z.string().max(10000).optional().nullable()
 })
 
 // Class / Timetable schemas

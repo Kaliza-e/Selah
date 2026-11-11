@@ -20,6 +20,8 @@ export interface TaskRecord {
   scheduled_time?: string | null
   scheduled_duration_minutes?: number | null
   total_time_spent_seconds?: number
+  recurrence_rule?: string | null
+  subtasks?: string | null
   created_at: string
 }
 
@@ -484,6 +486,21 @@ export function initDatabase(): Database.Database {
     }
   }
 
+  if (currentVersion < 7) {
+    try {
+      const taskCols = db.prepare("PRAGMA table_info(tasks)").all() as Array<{ name: string }>
+      if (!taskCols.some(col => col.name === 'recurrence_rule')) {
+        db.exec(`ALTER TABLE tasks ADD COLUMN recurrence_rule TEXT;`)
+      }
+      if (!taskCols.some(col => col.name === 'subtasks')) {
+        db.exec(`ALTER TABLE tasks ADD COLUMN subtasks TEXT;`)
+      }
+      db.exec(`INSERT OR REPLACE INTO schema_version (version) VALUES (7);`)
+    } catch (err) {
+      console.error('Error running migration v7:', err)
+    }
+  }
+
   // Ensure default settings exist
   const defaultSettings: Record<string, string> = {
     pinned: 'false',
@@ -569,6 +586,8 @@ export function addTask(payload: {
   scheduledDate?: string | null
   scheduledTime?: string | null
   scheduledDurationMinutes?: number | null
+  recurrenceRule?: string | null
+  subtasks?: string | null
 }): TaskRecord {
   const title = (payload.title || '').trim().slice(0, 240)
   if (!title) {
@@ -579,11 +598,13 @@ export function addTask(payload: {
   const schedDate = payload.scheduledDate || null
   const schedTime = payload.scheduledTime || null
   const schedDur = typeof payload.scheduledDurationMinutes === 'number' && !isNaN(payload.scheduledDurationMinutes) ? payload.scheduledDurationMinutes : null
+  const recRule = payload.recurrenceRule && ['daily', 'weekdays', 'weekly', 'monthly'].includes(payload.recurrenceRule) ? payload.recurrenceRule : null
+  const subtasksJson = typeof payload.subtasks === 'string' ? payload.subtasks : null
 
   const d = getDatabase()
   const info = d.prepare(`
-    INSERT INTO tasks (title, description, due_date, due_time, priority, category, class_id, estimated_minutes, scheduled_date, scheduled_time, scheduled_duration_minutes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tasks (title, description, due_date, due_time, priority, category, class_id, estimated_minutes, scheduled_date, scheduled_time, scheduled_duration_minutes, recurrence_rule, subtasks)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     title,
     payload.description?.trim() || null,
@@ -595,7 +616,9 @@ export function addTask(payload: {
     estMins,
     schedDate,
     schedTime,
-    schedDur
+    schedDur,
+    recRule,
+    subtasksJson
   )
   return d.prepare('SELECT * FROM tasks WHERE id = ?').get(info.lastInsertRowid) as TaskRecord
 }
@@ -614,6 +637,8 @@ export function updateTask(id: number, payload: Partial<{
   scheduledTime: string | null
   scheduledDurationMinutes: number | null
   totalTimeSpentSeconds: number
+  recurrenceRule: string | null
+  subtasks: string | null
 }>): TaskRecord {
   const d = getDatabase()
   const existing = d.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as TaskRecord | undefined
@@ -634,20 +659,96 @@ export function updateTask(id: number, payload: Partial<{
   const nextSchedTime = payload.scheduledTime !== undefined ? payload.scheduledTime : (existing.scheduled_time ?? null)
   const nextSchedDur = payload.scheduledDurationMinutes !== undefined ? payload.scheduledDurationMinutes : (existing.scheduled_duration_minutes ?? null)
   const nextTotalSpent = payload.totalTimeSpentSeconds !== undefined ? payload.totalTimeSpentSeconds : (existing.total_time_spent_seconds ?? 0)
+  const nextRecRule = payload.recurrenceRule !== undefined ? payload.recurrenceRule : (existing.recurrence_rule ?? null)
+  const nextSubtasks = payload.subtasks !== undefined ? payload.subtasks : (existing.subtasks ?? null)
 
   d.prepare(`
     UPDATE tasks 
     SET title = ?, description = ?, due_date = ?, due_time = ?, priority = ?, completed = ?, category = ?, class_id = ?, estimated_minutes = ?,
-        scheduled_date = ?, scheduled_time = ?, scheduled_duration_minutes = ?, total_time_spent_seconds = ?
+        scheduled_date = ?, scheduled_time = ?, scheduled_duration_minutes = ?, total_time_spent_seconds = ?, recurrence_rule = ?, subtasks = ?
     WHERE id = ?
-  `).run(nextTitle, nextDesc, nextDueDate, nextDueTime, nextPriority, nextCompleted, nextCategory, nextClassId, nextEstMins, nextSchedDate, nextSchedTime, nextSchedDur, nextTotalSpent, id)
+  `).run(nextTitle, nextDesc, nextDueDate, nextDueTime, nextPriority, nextCompleted, nextCategory, nextClassId, nextEstMins, nextSchedDate, nextSchedTime, nextSchedDur, nextTotalSpent, nextRecRule, nextSubtasks, id)
 
   return d.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as TaskRecord
 }
 
+function computeNextRecurrenceDate(currentDueDate: string | null, rule: string): string {
+  const base = currentDueDate && /^\d{4}-\d{2}-\d{2}$/.test(currentDueDate)
+    ? new Date(`${currentDueDate}T00:00:00`)
+    : new Date()
+  const now = new Date()
+  const start = base > now ? base : new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  const next = new Date(start)
+  if (rule === 'daily') {
+    next.setDate(next.getDate() + 1)
+  } else if (rule === 'weekdays') {
+    next.setDate(next.getDate() + 1)
+    while (next.getDay() === 0 || next.getDay() === 6) {
+      next.setDate(next.getDate() + 1)
+    }
+  } else if (rule === 'weekly') {
+    next.setDate(next.getDate() + 7)
+  } else if (rule === 'monthly') {
+    next.setMonth(next.getMonth() + 1)
+  }
+  const y = next.getFullYear()
+  const m = String(next.getMonth() + 1).padStart(2, '0')
+  const d = String(next.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 export function toggleTask(id: number, completed: boolean): boolean {
-  getDatabase().prepare('UPDATE tasks SET completed = ? WHERE id = ?').run(completed ? 1 : 0, id)
+  const d = getDatabase()
+  const existing = d.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as TaskRecord | undefined
+  d.prepare('UPDATE tasks SET completed = ? WHERE id = ?').run(completed ? 1 : 0, id)
+
+  // Spawn next occurrence if completing a recurring task that wasn't already completed
+  if (completed && existing && !existing.completed && existing.recurrence_rule) {
+    const nextDate = computeNextRecurrenceDate(existing.due_date, existing.recurrence_rule)
+    let resetSubtasks: string | null = existing.subtasks ?? null
+    if (resetSubtasks) {
+      try {
+        const parsed = JSON.parse(resetSubtasks)
+        if (Array.isArray(parsed)) {
+          resetSubtasks = JSON.stringify(parsed.map(s => ({ ...s, completed: false })))
+        }
+      } catch {
+        // leave as is
+      }
+    }
+    // Check if an identical active occurrence for nextDate already exists to prevent duplicates
+    const dup = d.prepare(
+      'SELECT id FROM tasks WHERE title = ? AND due_date = ? AND completed = 0 AND recurrence_rule = ?'
+    ).get(existing.title, nextDate, existing.recurrence_rule)
+
+    if (!dup) {
+      addTask({
+        title: existing.title,
+        description: existing.description || undefined,
+        dueDate: nextDate,
+        dueTime: existing.due_time || undefined,
+        priority: existing.priority,
+        category: existing.category || undefined,
+        classId: existing.class_id || undefined,
+        estimatedMinutes: existing.estimated_minutes,
+        recurrenceRule: existing.recurrence_rule,
+        subtasks: resetSubtasks
+      })
+    }
+  }
+
   return true
+}
+
+export function rescheduleOverdueTasksToToday(todayKey: string): number {
+  const d = getDatabase()
+  const info = d.prepare(`
+    UPDATE tasks
+    SET due_date = ?
+    WHERE completed = 0 AND due_date IS NOT NULL AND due_date < ?
+  `).run(todayKey, todayKey)
+  return info.changes
 }
 
 export function deleteTask(id: number): boolean {
@@ -807,7 +908,7 @@ export function markTaskDoneWithTimer(taskId: number): {
   if (active && active.task_id === taskId) {
     stopTimer()
   }
-  d.prepare('UPDATE tasks SET completed = 1 WHERE id = ?').run(taskId)
+  toggleTask(taskId, true)
   const task = d.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as TaskRecord
   return {
     task,
@@ -1093,16 +1194,18 @@ export function exportAllData(): {
   exportedAt: string
   tasks: TaskRecord[]
   classes: ClassRecord[]
+  scheduleEvents: ScheduleEventRecord[]
   dailyPlans: DailyPlanRecord[]
   settings: Record<string, string>
   importHistory: ImportHistoryRecord[]
 } {
   const d = getDatabase()
   return {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     tasks: d.prepare('SELECT * FROM tasks').all() as TaskRecord[],
     classes: d.prepare('SELECT * FROM classes').all() as ClassRecord[],
+    scheduleEvents: d.prepare('SELECT * FROM schedule_events').all() as ScheduleEventRecord[],
     dailyPlans: (d.prepare('SELECT * FROM daily_plans').all() as DailyPlanRecord[]).map(p => ({
       ...p,
       notes: p.notes ? decryptAtRest(p.notes) : null
@@ -1112,12 +1215,16 @@ export function exportAllData(): {
   }
 }
 
-export function importAllData(data: {
-  tasks?: TaskRecord[]
-  classes?: ClassRecord[]
-  dailyPlans?: DailyPlanRecord[]
-  settings?: Record<string, string>
-}): boolean {
+export function importAllData(
+  data: {
+    tasks?: TaskRecord[]
+    classes?: ClassRecord[]
+    scheduleEvents?: ScheduleEventRecord[]
+    dailyPlans?: DailyPlanRecord[]
+    settings?: Record<string, string>
+  },
+  mode: 'replace' | 'merge' = 'replace'
+): boolean {
   if (!data || typeof data !== 'object') {
     throw new Error('Invalid backup file: Root must be a valid JSON object')
   }
@@ -1127,12 +1234,17 @@ export function importAllData(data: {
 
   const d = getDatabase()
   const restoreTx = d.transaction(() => {
+    const isMerge = mode === 'merge'
+
     if (Array.isArray(data.tasks)) {
-      d.prepare('DELETE FROM tasks').run()
-      const insertTask = d.prepare(`
-        INSERT INTO tasks (id, title, description, due_date, due_time, priority, completed, category, class_id, estimated_minutes, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `)
+      if (!isMerge) d.prepare('DELETE FROM tasks').run()
+      const insertTask = d.prepare(
+        isMerge
+          ? `INSERT INTO tasks (title, description, due_date, due_time, priority, completed, category, class_id, estimated_minutes, recurrence_rule, subtasks, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          : `INSERT INTO tasks (id, title, description, due_date, due_time, priority, completed, category, class_id, estimated_minutes, recurrence_rule, subtasks, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
       for (const t of data.tasks) {
         if (!t || typeof t !== 'object' || !t.title || typeof t.title !== 'string') continue
         const safeId = typeof t.id === 'number' && Number.isInteger(t.id) ? t.id : null
@@ -1145,17 +1257,26 @@ export function importAllData(data: {
         const safeCategory = typeof t.category === 'string' ? t.category.slice(0, 60) : null
         const safeClassId = typeof t.class_id === 'number' && Number.isInteger(t.class_id) ? t.class_id : null
         const safeEstMins = typeof t.estimated_minutes === 'number' && Number.isInteger(t.estimated_minutes) ? t.estimated_minutes : null
+        const safeRec = typeof t.recurrence_rule === 'string' ? t.recurrence_rule : null
+        const safeSub = typeof t.subtasks === 'string' ? t.subtasks : null
         const safeCreatedAt = typeof t.created_at === 'string' ? t.created_at : new Date().toISOString()
-        insertTask.run(safeId, safeTitle, safeDesc, safeDueDate, safeDueTime, safePriority, safeCompleted, safeCategory, safeClassId, safeEstMins, safeCreatedAt)
+        if (isMerge) {
+          insertTask.run(safeTitle, safeDesc, safeDueDate, safeDueTime, safePriority, safeCompleted, safeCategory, safeClassId, safeEstMins, safeRec, safeSub, safeCreatedAt)
+        } else {
+          insertTask.run(safeId, safeTitle, safeDesc, safeDueDate, safeDueTime, safePriority, safeCompleted, safeCategory, safeClassId, safeEstMins, safeRec, safeSub, safeCreatedAt)
+        }
       }
     }
 
     if (Array.isArray(data.classes)) {
-      d.prepare('DELETE FROM classes').run()
-      const insertClass = d.prepare(`
-        INSERT INTO classes (id, title, weekday, start_time, end_time, room, notes, color, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `)
+      if (!isMerge) d.prepare('DELETE FROM classes').run()
+      const insertClass = d.prepare(
+        isMerge
+          ? `INSERT INTO classes (title, weekday, start_time, end_time, room, notes, color, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+          : `INSERT INTO classes (id, title, weekday, start_time, end_time, room, notes, color, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
       for (const c of data.classes) {
         if (!c || typeof c !== 'object' || !c.title || typeof c.title !== 'string') continue
         const safeId = typeof c.id === 'number' && Number.isInteger(c.id) ? c.id : null
@@ -1167,14 +1288,43 @@ export function importAllData(data: {
         const safeNotes = typeof c.notes === 'string' ? c.notes.slice(0, 500) : null
         const safeColor = typeof c.color === 'string' ? c.color.slice(0, 40) : null
         const safeCreatedAt = typeof c.created_at === 'string' ? c.created_at : new Date().toISOString()
-        insertClass.run(safeId, safeTitle, safeWeekday, safeStartTime, safeEndTime, safeRoom, safeNotes, safeColor, safeCreatedAt)
+        if (isMerge) {
+          insertClass.run(safeTitle, safeWeekday, safeStartTime, safeEndTime, safeRoom, safeNotes, safeColor, safeCreatedAt)
+        } else {
+          insertClass.run(safeId, safeTitle, safeWeekday, safeStartTime, safeEndTime, safeRoom, safeNotes, safeColor, safeCreatedAt)
+        }
+      }
+    }
+
+    if (Array.isArray(data.scheduleEvents)) {
+      if (!isMerge) d.prepare('DELETE FROM schedule_events').run()
+      const insertEvt = d.prepare(`
+        INSERT INTO schedule_events (title, description, start_date, start_time, end_date, end_time, is_all_day, category, location, is_completed, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      for (const ev of data.scheduleEvents) {
+        if (!ev || typeof ev !== 'object' || !ev.title || !ev.start_date) continue
+        insertEvt.run(
+          String(ev.title).slice(0, 240),
+          ev.description ? String(ev.description) : null,
+          String(ev.start_date),
+          ev.start_time ? String(ev.start_time) : null,
+          ev.end_date ? String(ev.end_date) : String(ev.start_date),
+          ev.end_time ? String(ev.end_time) : null,
+          ev.is_all_day ? 1 : 0,
+          ev.category ? String(ev.category) : 'Other',
+          ev.location ? String(ev.location) : null,
+          ev.is_completed ? 1 : 0,
+          ev.created_at || new Date().toISOString(),
+          ev.updated_at || new Date().toISOString()
+        )
       }
     }
 
     if (Array.isArray(data.dailyPlans)) {
-      d.prepare('DELETE FROM daily_plans').run()
+      if (!isMerge) d.prepare('DELETE FROM daily_plans').run()
       const insertPlan = d.prepare(`
-        INSERT INTO daily_plans (plan_date, notes, materials_checked, created_at, updated_at)
+        INSERT OR REPLACE INTO daily_plans (plan_date, notes, materials_checked, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?)
       `)
       for (const p of data.dailyPlans) {

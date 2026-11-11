@@ -11,8 +11,11 @@ import {
   PictureInPicture2,
   Sun,
   Moon,
-  Bell
+  Bell,
+  Timer,
+  Search
 } from 'lucide-react'
+import type { ActiveTimer } from '../types'
 
 function getCurrentWeekNumber(d = new Date()): number {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
@@ -29,6 +32,16 @@ interface TitleBarProps {
   onToggleMode: () => void
   theme: 'dark' | 'light'
   onToggleTheme: () => void
+  activeTimer?: ActiveTimer | null
+  activeTimerSeconds?: number
+  onOpenActiveTimer?: () => void
+  onOpenCommandPalette?: () => void
+}
+
+function formatMiniTimer(totalSec: number): string {
+  const m = Math.floor(totalSec / 60)
+  const s = totalSec % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
 export function TitleBar({
@@ -37,7 +50,11 @@ export function TitleBar({
   widgetMode,
   onToggleMode,
   theme,
-  onToggleTheme
+  onToggleTheme,
+  activeTimer,
+  activeTimerSeconds = 0,
+  onOpenActiveTimer,
+  onOpenCommandPalette
 }: TitleBarProps) {
   const [isMaximized, setIsMaximized] = useState(false)
   const [freeRemindersActive, setFreeRemindersActive] = useState(true)
@@ -94,9 +111,64 @@ export function TitleBar({
             <span className="indicator-live-dot" />
           </span>
         )}
+
+        {activeTimer && (
+          <button
+            type="button"
+            className="week-chip"
+            onClick={onOpenActiveTimer}
+            title="Open Focus timer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              cursor: 'pointer',
+              background: 'rgba(139, 92, 246, 0.2)',
+              borderColor: 'rgba(139, 92, 246, 0.45)',
+              color: 'var(--text-primary)',
+              marginLeft: 4
+            }}
+          >
+            <Timer size={11} color="var(--accent-purple)" />
+            <span style={{ maxWidth: 95, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {activeTimer.task_title || 'Focus'}
+            </span>
+            <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>
+              {activeTimer.is_pomodoro
+                ? formatMiniTimer(
+                    Math.max(
+                      0,
+                      (activeTimer.pomodoro_phase === 'work'
+                        ? activeTimer.pomodoro_work_duration
+                        : activeTimer.pomodoro_break_duration) -
+                        (activeTimerSeconds %
+                          Math.max(
+                            1,
+                            activeTimer.pomodoro_phase === 'work'
+                              ? activeTimer.pomodoro_work_duration
+                              : activeTimer.pomodoro_break_duration
+                          ))
+                    )
+                  )
+                : formatMiniTimer(activeTimerSeconds)}
+            </span>
+          </button>
+        )}
       </div>
 
       <div className="window-controls">
+        {onOpenCommandPalette && (
+          <button
+            type="button"
+            className="win-btn"
+            title="Command Palette (Ctrl+K)"
+            aria-label="Open Command Palette"
+            onClick={onOpenCommandPalette}
+          >
+            <Search size={12} />
+          </button>
+        )}
+
         {/* Dark / Light Theme Toggle */}
         <button
           type="button"

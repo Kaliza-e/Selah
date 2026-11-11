@@ -8,7 +8,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react'
-import { Task, ClassItem, ActiveTab, toDateKey } from './types'
+import { Task, ClassItem, ActiveTab, ActiveTimer, toDateKey } from './types'
 import { APP_CONFIG } from '../../shared/appConfig'
 import { TitleBar } from './components/TitleBar'
 import { TodayView } from './components/TodayView'
@@ -24,6 +24,14 @@ import { FocusViewModal } from './components/FocusViewModal'
 import { ScheduleTaskModal } from './components/ScheduleTaskModal'
 import { Toast, ToastData } from './components/Toast'
 import { ScheduleCreatorModal } from './components/ScheduleCreatorModal'
+import { CommandPaletteModal } from './components/CommandPaletteModal'
+import {
+  ThemePreference,
+  AccentColorId,
+  resolveEffectiveTheme,
+  isValidAccentColor,
+  applyAccentPalette
+} from './lib/themeUtils'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('today')
@@ -31,12 +39,39 @@ export default function App() {
   const [classes, setClasses] = useState<ClassItem[]>([])
   const [pinned, setPinned] = useState(false)
   const [widgetMode, setWidgetMode] = useState<'compact' | 'standard'>('compact')
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  const [themePref, setThemePref] = useState<ThemePreference>('dark')
+  const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(() =>
+    typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches
+      : true
+  )
+  const [accentColor, setAccentColor] = useState<AccentColorId>('violet')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [uiScale, setUiScale] = useState<'90' | '100' | '115' | '130'>('100')
   const [userName, setUserName] = useState('')
   const [toast, setToast] = useState<ToastData | null>(null)
   const [today, setToday] = useState(new Date())
+  const [activeTimer, setActiveTimer] = useState<ActiveTimer | null>(null)
+  const [activeTimerSeconds, setActiveTimerSeconds] = useState(0)
+  const [showCommandPalette, setShowCommandPalette] = useState(false)
+
+  const effectiveTheme = resolveEffectiveTheme(themePref, systemPrefersDark)
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', effectiveTheme)
+  }, [effectiveTheme])
+
+  useEffect(() => {
+    applyAccentPalette(document.documentElement, accentColor)
+  }, [accentColor])
+
+  useEffect(() => {
+    if (!window.matchMedia) return
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = (e: MediaQueryListEvent) => setSystemPrefersDark(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
 
   // Apply UI scale cleanly across the root document
   useEffect(() => {
@@ -89,12 +124,13 @@ export default function App() {
       const api = window.hello11824
       if (!api) return
 
-      const [tList, cList, pinSetting, modeSetting, themeSetting, sidebarSetting, scaleSetting, nameSetting] = await Promise.all([
+      const [tList, cList, pinSetting, modeSetting, themeSetting, accentSetting, sidebarSetting, scaleSetting, nameSetting] = await Promise.all([
         api.listTasks(),
         api.listClasses(),
         api.getSetting('pinned'),
         api.getSetting('widget_mode'),
         api.getSetting('theme'),
+        api.getSetting('accent_color'),
         api.getSetting('sidebar_collapsed'),
         api.getSetting('ui_scale'),
         api.getSetting('user_name')
@@ -118,11 +154,11 @@ export default function App() {
       if (typeof nameSetting === 'string') {
         setUserName(nameSetting)
       }
-      if (themeSetting === 'light' || themeSetting === 'dark') {
-        setTheme(themeSetting)
-        document.documentElement.setAttribute('data-theme', themeSetting)
-      } else {
-        document.documentElement.setAttribute('data-theme', 'dark')
+      if (themeSetting === 'light' || themeSetting === 'dark' || themeSetting === 'system') {
+        setThemePref(themeSetting)
+      }
+      if (isValidAccentColor(accentSetting)) {
+        setAccentColor(accentSetting)
       }
     } catch (err) {
       console.error('Failed to load data:', err)
@@ -130,8 +166,19 @@ export default function App() {
     }
   }, [])
 
+  const syncActiveTimer = useCallback(async () => {
+    try {
+      const active = await window.hello11824?.getActiveTimer?.()
+      setActiveTimer(active || null)
+      setActiveTimerSeconds(active?.elapsed_seconds || 0)
+    } catch {
+      // ignore
+    }
+  }, [])
+
   useEffect(() => {
     loadData()
+    syncActiveTimer()
 
     const unsubMode = window.hello11824?.onModeChanged?.((mode?: 'compact' | 'standard') => {
       if (mode) {
@@ -145,11 +192,56 @@ export default function App() {
       setPinned(next)
     })
 
+    const unsubQuickAdd = window.hello11824?.onShortcutQuickAdd?.(() => {
+      setEditingTask(null)
+      setShowGlobalTaskModal(true)
+    })
+
+    const unsubStartFocus = window.hello11824?.onShortcutStartFocus?.(async () => {
+      const active = await window.hello11824?.getActiveTimer?.()
+      const currentTasks = await window.hello11824?.listTasks?.()
+      if (active) {
+        const match = (currentTasks || []).find(t => t.id === active.task_id)
+        if (match) {
+          setFocusTask(match)
+          return
+        }
+      }
+      const nextPending = (currentTasks || []).find(t => !t.completed)
+      if (nextPending) {
+        setFocusTask(nextPending)
+      } else {
+        setActiveTab('tasks')
+        showToast('No pending tasks found. Add a task to start focusing.')
+      }
+    })
+
     return () => {
       unsubMode?.()
       unsubPin?.()
+      unsubQuickAdd?.()
+      unsubStartFocus?.()
     }
-  }, [loadData])
+  }, [loadData, syncActiveTimer, showToast])
+
+  useEffect(() => {
+    if (!activeTimer || activeTimer.status !== 'running') return
+    const id = setInterval(() => {
+      setActiveTimerSeconds(prev => prev + 1)
+    }, 1000)
+    return () => clearInterval(id)
+  }, [activeTimer])
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setShowCommandPalette(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   const refreshTasks = useCallback(async () => {
     const updated = await window.hello11824.listTasks()
@@ -174,16 +266,19 @@ export default function App() {
   }, [widgetMode])
 
   const handleToggleTheme = useCallback(async () => {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    document.documentElement.setAttribute('data-theme', next)
+    const next: ThemePreference = effectiveTheme === 'dark' ? 'light' : 'dark'
+    setThemePref(next)
     await window.hello11824.setSetting('theme', next)
-  }, [theme])
+  }, [effectiveTheme])
 
-  const handleSetTheme = useCallback(async (newTheme: 'dark' | 'light') => {
-    setTheme(newTheme)
-    document.documentElement.setAttribute('data-theme', newTheme)
+  const handleSetTheme = useCallback(async (newTheme: ThemePreference) => {
+    setThemePref(newTheme)
     await window.hello11824.setSetting('theme', newTheme)
+  }, [])
+
+  const handleSetAccentColor = useCallback(async (nextAccent: AccentColorId) => {
+    setAccentColor(nextAccent)
+    await window.hello11824.setSetting('accent_color', nextAccent)
   }, [])
 
   const handleToggleSidebar = useCallback(async () => {
@@ -227,7 +322,9 @@ export default function App() {
               dueTime: taskToDelete.due_time || undefined,
               priority: taskToDelete.priority,
               category: taskToDelete.category || undefined,
-              estimatedMinutes: taskToDelete.estimated_minutes
+              estimatedMinutes: taskToDelete.estimated_minutes,
+              recurrenceRule: taskToDelete.recurrence_rule ?? null,
+              subtasks: taskToDelete.subtasks ?? null
             })
             await refreshTasks()
           }
@@ -306,15 +403,23 @@ export default function App() {
   const isCompactMode = widgetMode === 'compact'
 
   return (
-    <div className={`widget-window mode-${widgetMode}`} data-theme={theme}>
+    <div className={`widget-window mode-${widgetMode}`} data-theme={effectiveTheme}>
       {/* Titlebar with real brand icon and theme switcher */}
       <TitleBar
         pinned={pinned}
         onTogglePin={handleTogglePin}
         widgetMode={widgetMode}
         onToggleMode={handleToggleMode}
-        theme={theme}
+        theme={effectiveTheme}
         onToggleTheme={handleToggleTheme}
+        activeTimer={activeTimer}
+        activeTimerSeconds={activeTimerSeconds}
+        onOpenActiveTimer={() => {
+          if (!activeTimer) return
+          const match = tasks.find(t => t.id === activeTimer.task_id)
+          if (match) setFocusTask(match)
+        }}
+        onOpenCommandPalette={() => setShowCommandPalette(true)}
       />
 
       {/* Main Container: Compact Floating Widget or Full Application Dashboard */}
@@ -540,8 +645,10 @@ export default function App() {
                 onTogglePin={handleTogglePin}
                 widgetMode={widgetMode}
                 onToggleMode={handleToggleMode}
-                theme={theme}
+                theme={themePref}
                 onThemeChange={handleSetTheme}
+                accentColor={accentColor}
+                onAccentColorChange={handleSetAccentColor}
                 uiScale={uiScale}
                 onUiScaleChange={handleSetUiScale}
                 userName={userName}
@@ -583,6 +690,21 @@ export default function App() {
         task={focusTask}
         onTaskCompleted={handleTaskCompleted}
         onShowMessage={showToast}
+        onTimerSync={syncActiveTimer}
+      />
+
+      {/* Global Command Palette (Ctrl+K) */}
+      <CommandPaletteModal
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        tasks={tasks}
+        onNavigate={tab => setActiveTab(tab)}
+        onOpenNewTask={() => {
+          setEditingTask(null)
+          setShowGlobalTaskModal(true)
+        }}
+        onToggleTheme={handleToggleTheme}
+        onOpenFocusTimer={task => setFocusTask(task)}
       />
 
       {/* Phase 2: Schedule Task Slot Modal */}

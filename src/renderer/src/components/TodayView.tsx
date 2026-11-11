@@ -284,24 +284,47 @@ export function TodayView({
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 12.5, color: 'var(--text-secondary)' }}>
             <span>{formattedDate} • Week {weekNumber}</span>
             {overdueCount > 0 && (
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '2px 8px',
-                  borderRadius: 9999,
-                  background: 'rgba(244, 63, 94, 0.14)',
-                  color: '#f43f5e',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
-                onClick={() => onNavigate('tasks')}
-                title="View overdue tasks"
-              >
-                <AlertCircle size={11} /> {overdueCount} overdue
-              </span>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '2px 8px',
+                    borderRadius: 9999,
+                    background: 'rgba(244, 63, 94, 0.14)',
+                    color: '#f43f5e',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => onNavigate('tasks')}
+                  title="View overdue tasks"
+                >
+                  <AlertCircle size={11} /> {overdueCount} overdue
+                </span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const moved = await window.hello11824.rescheduleOverdueTasks(todayKey)
+                    await onRefreshTasks?.()
+                    onShowMessage?.(`Moved ${moved} overdue task${moved === 1 ? '' : 's'} to today.`)
+                  }}
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: 9999,
+                    border: '1px solid rgba(244, 63, 94, 0.35)',
+                    background: 'transparent',
+                    color: '#fda4af',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                  title="Move all overdue tasks to today"
+                >
+                  Move to today
+                </button>
+              </div>
             )}
           </div>
         </div>

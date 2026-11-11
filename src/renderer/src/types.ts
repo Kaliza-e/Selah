@@ -1,3 +1,9 @@
+export interface SubtaskItem {
+  id: string
+  title: string
+  done: boolean
+}
+
 export interface Task {
   id: number
   title: string
@@ -13,6 +19,8 @@ export interface Task {
   scheduled_time?: string | null
   scheduled_duration_minutes?: number | null
   total_time_spent_seconds?: number
+  recurrence_rule?: string | null
+  subtasks?: string | null
   created_at: string
 }
 

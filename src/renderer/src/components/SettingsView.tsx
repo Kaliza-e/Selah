@@ -5,20 +5,32 @@ import {
   Sunset,
   Sun,
   Moon,
-  Lock,
+  Monitor,
   X,
   KeyRound,
-  Heart,
-  BookOpen
+  Upload
 } from 'lucide-react'
+
+export type AccentColorId = 'violet' | 'indigo' | 'blue' | 'emerald' | 'rose' | 'amber'
+
+export const ACCENT_PRESETS: Array<{ id: AccentColorId; label: string; color: string; hover: string }> = [
+  { id: 'violet', label: 'Violet', color: '#7c3aed', hover: '#8b5cf6' },
+  { id: 'indigo', label: 'Indigo', color: '#4f46e5', hover: '#6366f1' },
+  { id: 'blue', label: 'Blue', color: '#2563eb', hover: '#3b82f6' },
+  { id: 'emerald', label: 'Emerald', color: '#059669', hover: '#10b981' },
+  { id: 'rose', label: 'Rose', color: '#e11d48', hover: '#f43f5e' },
+  { id: 'amber', label: 'Amber', color: '#d97706', hover: '#f59e0b' }
+]
 
 interface SettingsViewProps {
   pinned: boolean
   onTogglePin: () => void
   widgetMode: 'compact' | 'standard'
   onToggleMode: () => void
-  theme: 'dark' | 'light'
-  onThemeChange: (theme: 'dark' | 'light') => void
+  theme: 'dark' | 'light' | 'system'
+  onThemeChange: (theme: 'dark' | 'light' | 'system') => void
+  accentColor: AccentColorId
+  onAccentColorChange: (accent: AccentColorId) => void
   uiScale: '90' | '100' | '115' | '130'
   onUiScaleChange: (scale: '90' | '100' | '115' | '130') => void
   userName: string
@@ -34,6 +46,8 @@ export function SettingsView({
   onToggleMode,
   theme,
   onThemeChange,
+  accentColor,
+  onAccentColorChange,
   uiScale,
   onUiScaleChange,
   userName,
@@ -61,6 +75,7 @@ export function SettingsView({
   const [isPinConfigured, setIsPinConfigured] = useState(false)
   const [showPinModal, setShowPinModal] = useState(false)
   const [pinInput, setPinInput] = useState('')
+  const [showJsonImportModal, setShowJsonImportModal] = useState(false)
 
   // Faith & Encouragement Settings
   const [faithEnabled, setFaithEnabled] = useState(true)
@@ -202,12 +217,13 @@ export function SettingsView({
     }
   }
 
-  async function handleBackupImport() {
+  async function handleBackupImport(mode: 'merge' | 'replace') {
+    setShowJsonImportModal(false)
     try {
-      const ok = await window.hello11824.importData()
+      const ok = await window.hello11824.importData(mode)
       if (ok) {
         await onRefreshAll()
-        onShowMessage('Backup restored successfully.')
+        onShowMessage(mode === 'merge' ? 'Backup merged into your workspace.' : 'Backup restored successfully.')
       }
     } catch (err) {
       onShowMessage(`Import error: ${err instanceof Error ? err.message : String(err)}`)
@@ -323,6 +339,42 @@ export function SettingsView({
               >
                 <Sun size={12} /> Light
               </button>
+              <button
+                type="button"
+                className={`theme-pill-btn ${theme === 'system' ? 'active' : ''}`}
+                onClick={() => onThemeChange('system')}
+              >
+                <Monitor size={12} /> System
+              </button>
+            </div>
+          </div>
+
+          <div className="setting-toggle-row">
+            <span className="setting-title">Accent color</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} role="group" aria-label="Accent color">
+              {ACCENT_PRESETS.map(preset => {
+                const selected = accentColor === preset.id
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => onAccentColorChange(preset.id)}
+                    title={preset.label}
+                    aria-label={`${preset.label} accent`}
+                    aria-pressed={selected}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: '50%',
+                      background: preset.color,
+                      border: selected ? '2px solid var(--text-primary)' : '2px solid transparent',
+                      boxShadow: selected ? `0 0 0 2px ${preset.color}` : 'none',
+                      cursor: 'pointer',
+                      padding: 0
+                    }}
+                  />
+                )
+              })}
             </div>
           </div>
 
@@ -729,9 +781,14 @@ export function SettingsView({
           <div
             className="setting-toggle-row"
             style={{ cursor: 'pointer' }}
-            onClick={handleBackupImport}
+            onClick={() => setShowJsonImportModal(true)}
           >
-            <span className="setting-title">Restore Standard JSON</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span className="setting-title">Import / Restore JSON Backup</span>
+              <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
+                Merge with existing data or restore full snapshot
+              </span>
+            </div>
             <ChevronRight size={14} color="var(--text-muted)" />
           </div>
         </div>
@@ -815,6 +872,45 @@ export function SettingsView({
                   disabled={pinInput.length < 4}
                 >
                   Save PIN
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* JSON Import Merge / Replace Choice Modal */}
+      {showJsonImportModal && (
+        <div className="modal-backdrop" onClick={() => setShowJsonImportModal(false)} role="dialog" aria-modal="true" aria-label="Import JSON Backup">
+          <div className="modal-content" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Upload size={16} color="var(--accent-purple)" />
+                <h3 className="modal-title">Import JSON Backup</h3>
+              </div>
+              <button type="button" className="win-btn" onClick={() => setShowJsonImportModal(false)} aria-label="Close">
+                <X size={15} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ gap: 12 }}>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45, margin: 0 }}>
+                Choose how to restore data from your JSON backup file:
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn-primary-pill"
+                  style={{ width: '100%', justifyContent: 'center', padding: '10px 14px', background: 'var(--accent-purple-btn)' }}
+                  onClick={() => handleBackupImport('merge')}
+                >
+                  Merge with existing data (recommended)
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary-pill"
+                  style={{ width: '100%', justifyContent: 'center', padding: '10px 14px', borderColor: 'rgba(244, 63, 94, 0.45)', color: '#fda4af' }}
+                  onClick={() => handleBackupImport('replace')}
+                >
+                  Replace all existing data
                 </button>
               </div>
             </div>

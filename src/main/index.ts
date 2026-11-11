@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, screen, session } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, screen, session, globalShortcut } from 'electron'
 import { join } from 'node:path'
 import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync, statSync } from 'node:fs'
 import pdfParse from 'pdf-parse'
@@ -14,6 +14,7 @@ import {
   toggleTask,
   deleteTask,
   rolloverTasks,
+  rescheduleOverdueTasksToToday,
   listClasses,
   addClass,
   updateClass,
@@ -615,8 +616,19 @@ function updateTrayMenu() {
 
   const isPinned = getSetting('pinned') === 'true'
   const startupSetting = app.getLoginItemSettings()
+  let pendingCount = 0
+  try {
+    pendingCount = listTasks().filter(t => !t.completed).length
+  } catch {
+    pendingCount = 0
+  }
 
   const contextMenu = Menu.buildFromTemplate([
+    {
+      label: `${pendingCount} pending ${pendingCount === 1 ? 'task' : 'tasks'}`,
+      enabled: false
+    },
+    { type: 'separator' },
     {
       label: `Open ${APP_CONFIG.name}`,
       click: () => {
@@ -628,6 +640,28 @@ function updateTrayMenu() {
           if (pinned) {
             applyPinnedState(true)
           }
+        }
+      }
+    },
+    {
+      label: 'Add Task (Quick Capture)',
+      click: () => {
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore()
+          mainWindow.show()
+          mainWindow.focus()
+          mainWindow.webContents.send('shortcut:quick-add')
+        }
+      }
+    },
+    {
+      label: 'Start Focus Session',
+      click: () => {
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore()
+          mainWindow.show()
+          mainWindow.focus()
+          mainWindow.webContents.send('shortcut:start-focus')
         }
       }
     },
@@ -757,6 +791,19 @@ if (gotSingleInstanceLock) {
       }
     }
 
+    try {
+      globalShortcut.register('CommandOrControl+Shift+Space', () => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          if (mainWindow.isMinimized()) mainWindow.restore()
+          mainWindow.show()
+          mainWindow.focus()
+          mainWindow.webContents.send('shortcut:quick-add')
+        }
+      })
+    } catch (err) {
+      logWarn('[App] Global shortcut registration skipped:', err)
+    }
+
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
         createWindow()
@@ -784,6 +831,10 @@ app.on('child-process-gone', (_event, details) => {
 
 app.on('before-quit', () => {
   isAppQuitting = true
+})
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
 })
 
 // ----------------- IPC Channel Handlers -----------------
@@ -905,7 +956,7 @@ ipcMain.handle('tasks:list', (event, date?: string) => {
 ipcMain.handle('tasks:add', (event, payload) => {
   assertAuthorizedSender(event)
   const validated = TaskCreateSchema.parse(payload)
-  return addTask({
+  const created = addTask({
     title: validated.title,
     description: validated.description ?? undefined,
     dueDate: validated.dueDate ?? undefined,
@@ -913,29 +964,44 @@ ipcMain.handle('tasks:add', (event, payload) => {
     priority: validated.priority,
     category: validated.category ?? undefined,
     classId: validated.classId ?? undefined,
-    estimatedMinutes: validated.estimatedMinutes ?? undefined
+    estimatedMinutes: validated.estimatedMinutes ?? undefined,
+    recurrenceRule: validated.recurrenceRule ?? undefined,
+    subtasks: validated.subtasks ?? undefined
   })
+  updateTrayMenu()
+  return created
 })
 
 ipcMain.handle('tasks:update', (event, id: number, payload) => {
   assertAuthorizedSender(event)
   const validated = TaskUpdateSchema.parse(payload)
-  return updateTask(Number(id), validated)
+  const updated = updateTask(Number(id), validated)
+  updateTrayMenu()
+  return updated
 })
 
 ipcMain.handle('tasks:toggle', (event, id: number, completed: boolean) => {
   assertAuthorizedSender(event)
-  return toggleTask(Number(id), Boolean(completed))
+  const res = toggleTask(Number(id), Boolean(completed))
+  updateTrayMenu()
+  return res
 })
 
 ipcMain.handle('tasks:delete', (event, id: number) => {
   assertAuthorizedSender(event)
-  return deleteTask(Number(id))
+  const res = deleteTask(Number(id))
+  updateTrayMenu()
+  return res
 })
 
 ipcMain.handle('tasks:rollover', (event, fromDate: string, toDate: string) => {
   assertAuthorizedSender(event)
   return rolloverTasks(String(fromDate), String(toDate))
+})
+
+ipcMain.handle('tasks:reschedule-overdue', (event, todayKey: string) => {
+  assertAuthorizedSender(event)
+  return rescheduleOverdueTasksToToday(String(todayKey))
 })
 
 ipcMain.handle('tasks:schedule', (event, taskId: number, date: string, time?: string, durationMinutes?: number) => {
@@ -1513,8 +1579,7 @@ ipcMain.handle('data:export', async (event) => {
   return true
 })
 
-ipcMain.handle('data:import', async (event) => {
-  assertAuthorizedSender(event)
+async function runBackupImportDialog(mode: 'replace' | 'merge'): Promise<boolean> {
   if (!mainWindow || mainWindow.isDestroyed()) return false
   const openResult = await dialog.showOpenDialog(mainWindow, {
     title: `Restore ${APP_CONFIG.name} Backup`,
@@ -1538,7 +1603,17 @@ ipcMain.handle('data:import', async (event) => {
 
   const raw = readFileSync(filePath, 'utf-8')
   const json = JSON.parse(raw)
-  return importAllData(json)
+  return importAllData(json, mode === 'merge' ? 'merge' : 'replace')
+}
+
+ipcMain.handle('data:import', async (event) => {
+  assertAuthorizedSender(event)
+  return runBackupImportDialog('replace')
+})
+
+ipcMain.handle('data:import-mode', async (event, mode: 'replace' | 'merge' = 'replace') => {
+  assertAuthorizedSender(event)
+  return runBackupImportDialog(mode)
 })
 
 ipcMain.handle('data:clear', (event, options: { tasks?: boolean; classes?: boolean; plans?: boolean }) => {

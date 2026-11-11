@@ -8,9 +8,12 @@ import {
   Clock,
   Play,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Repeat,
+  CheckSquare,
+  ArrowRight
 } from 'lucide-react'
-import { Task, toDateKey } from '../types'
+import { Task, SubtaskItem, toDateKey } from '../types'
 import { TaskModal } from './TaskModal'
 import { PortalMenu } from './PortalMenu'
 import { formatTaskDate, isTaskOverdue } from '../lib/dateUtils'
@@ -52,6 +55,16 @@ export function TasksView({
   const in7Days = new Date(today)
   in7Days.setDate(today.getDate() + 7)
   const in7DaysKey = toDateKey(in7Days)
+
+  const overdueCount = useMemo(() => {
+    return tasks.filter(t => isTaskOverdue(t.due_date, t.due_time, t.completed, today)).length
+  }, [tasks, today])
+
+  async function handleRolloverOverdue() {
+    const moved = await window.hello11824.rescheduleOverdueTasks(todayKey)
+    await onRefreshTasks()
+    onShowMessage(`Moved ${moved} overdue task${moved === 1 ? '' : 's'} to today.`)
+  }
 
   // Filter tasks with completed sorted to bottom and overdue prioritization
   const filteredTasks = useMemo(() => {
@@ -133,6 +146,36 @@ export function TasksView({
         ))}
       </div>
 
+      {/* Overdue Rollover Banner */}
+      {overdueCount > 0 && filter !== 'completed' && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 10,
+            padding: '8px 12px',
+            borderRadius: 'var(--radius-sm)',
+            background: 'rgba(244, 63, 94, 0.1)',
+            border: '1px solid rgba(244, 63, 94, 0.28)'
+          }}
+        >
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#fda4af', fontWeight: 600 }}>
+            <AlertCircle size={14} color="#f43f5e" />
+            {overdueCount} overdue task{overdueCount === 1 ? '' : 's'} from earlier dates
+          </span>
+          <button
+            type="button"
+            className="btn-secondary-pill"
+            onClick={handleRolloverOverdue}
+            style={{ fontSize: 11.5, padding: '4px 10px', borderColor: 'rgba(244, 63, 94, 0.4)', color: '#fda4af' }}
+          >
+            Move all to today <ArrowRight size={12} />
+          </button>
+        </div>
+      )}
+
       {/* Tasks Table */}
       <div className="data-table-container">
         {filteredTasks.length === 0 ? (
@@ -143,6 +186,16 @@ export function TasksView({
           filteredTasks.map(t => {
             const timeText = formatTaskDate(t.due_date, t.due_time, today)
             const isOverdue = isTaskOverdue(t.due_date, t.due_time, t.completed, today)
+            let parsedSubtasks: SubtaskItem[] = []
+            if (t.subtasks) {
+              try {
+                const arr = JSON.parse(t.subtasks)
+                if (Array.isArray(arr)) parsedSubtasks = arr
+              } catch {
+                parsedSubtasks = []
+              }
+            }
+            const doneSubtasks = parsedSubtasks.filter(s => s.done).length
 
             return (
               <div
@@ -178,10 +231,26 @@ export function TasksView({
                   >
                     {t.title}
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10.5, flexWrap: 'wrap' }}>
                     {t.scheduled_date && (
                       <span style={{ color: 'var(--accent-purple)', fontWeight: 600 }}>
                         {t.scheduled_date === todayKey ? 'Today' : t.scheduled_date} {t.scheduled_time || ''}
+                      </span>
+                    )}
+                    {t.recurrence_rule && (
+                      <span
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--accent-purple)' }}
+                        title={`Repeats ${t.recurrence_rule}`}
+                      >
+                        <Repeat size={10} /> {t.recurrence_rule}
+                      </span>
+                    )}
+                    {parsedSubtasks.length > 0 && (
+                      <span
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--text-secondary)' }}
+                        title="Subtasks completed"
+                      >
+                        <CheckSquare size={10} /> {doneSubtasks}/{parsedSubtasks.length}
                       </span>
                     )}
                     {t.total_time_spent_seconds && t.total_time_spent_seconds > 0 ? (

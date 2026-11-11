@@ -106,6 +106,14 @@ export function createBrowserMockApi(): HelloAPI {
       }
     },
 
+    onShortcutQuickAdd(_callback: () => void) {
+      return () => {}
+    },
+
+    onShortcutStartFocus(_callback: () => void) {
+      return () => {}
+    },
+
     async getSetting(key: string) {
       const settings = loadFromStorage(STORAGE_KEYS.SETTINGS, { ...DEFAULT_SETTINGS })
       return settings[key] ?? null
@@ -159,6 +167,9 @@ export function createBrowserMockApi(): HelloAPI {
         completed: 0,
         category: payload.category || null,
         class_id: payload.classId || null,
+        estimated_minutes: payload.estimatedMinutes ?? null,
+        recurrence_rule: payload.recurrenceRule ?? null,
+        subtasks: payload.subtasks ?? null,
         created_at: new Date().toISOString()
       }
       tasks.push(newTask)
@@ -181,7 +192,10 @@ export function createBrowserMockApi(): HelloAPI {
         priority: payload.priority !== undefined ? payload.priority : current.priority,
         completed: payload.completed !== undefined ? (payload.completed ? 1 : 0) : current.completed,
         category: payload.category !== undefined ? payload.category : current.category,
-        class_id: payload.classId !== undefined ? payload.classId : current.class_id
+        class_id: payload.classId !== undefined ? payload.classId : current.class_id,
+        estimated_minutes: payload.estimatedMinutes !== undefined ? payload.estimatedMinutes : current.estimated_minutes,
+        recurrence_rule: payload.recurrenceRule !== undefined ? payload.recurrenceRule : current.recurrence_rule,
+        subtasks: payload.subtasks !== undefined ? payload.subtasks : current.subtasks
       }
       tasks[idx] = updated
       saveToStorage(STORAGE_KEYS.TASKS, tasks)
@@ -212,6 +226,19 @@ export function createBrowserMockApi(): HelloAPI {
       for (const t of tasks) {
         if (t.due_date === fromDate && t.completed === 0) {
           t.due_date = toDate
+          count++
+        }
+      }
+      saveToStorage(STORAGE_KEYS.TASKS, tasks)
+      return count
+    },
+
+    async rescheduleOverdueTasks(todayKey: string) {
+      const tasks = loadFromStorage(STORAGE_KEYS.TASKS, DEFAULT_TASKS)
+      let count = 0
+      for (const t of tasks) {
+        if (t.completed === 0 && t.due_date && t.due_date < todayKey) {
+          t.due_date = todayKey
           count++
         }
       }
@@ -506,7 +533,7 @@ export function createBrowserMockApi(): HelloAPI {
       return true
     },
 
-    async importData() {
+    async importData(mode: 'replace' | 'merge' = 'replace') {
       return new Promise((resolve) => {
         const input = document.createElement('input')
         input.type = 'file'
@@ -520,10 +547,41 @@ export function createBrowserMockApi(): HelloAPI {
           try {
             const raw = await file.text()
             const data = JSON.parse(raw)
-            if (data.tasks) saveToStorage(STORAGE_KEYS.TASKS, data.tasks)
-            if (data.classes) saveToStorage(STORAGE_KEYS.CLASSES, data.classes)
-            if (data.settings) saveToStorage(STORAGE_KEYS.SETTINGS, data.settings)
-            if (data.daily_plans) saveToStorage(STORAGE_KEYS.DAILY_PLANS, data.daily_plans)
+            if (mode === 'merge') {
+              if (Array.isArray(data.tasks)) {
+                const existing = loadFromStorage<Task[]>(STORAGE_KEYS.TASKS, [])
+                const seen = new Set(existing.map(t => `${t.title}::${t.due_date || ''}`))
+                let maxId = existing.reduce((m, t) => Math.max(m, t.id), 0)
+                for (const t of data.tasks) {
+                  const key = `${t.title}::${t.due_date || ''}`
+                  if (!seen.has(key)) {
+                    maxId += 1
+                    existing.push({ ...t, id: maxId })
+                    seen.add(key)
+                  }
+                }
+                saveToStorage(STORAGE_KEYS.TASKS, existing)
+              }
+              if (Array.isArray(data.classes)) {
+                const existing = loadFromStorage<SubjectItem[]>(STORAGE_KEYS.CLASSES, [])
+                const seen = new Set(existing.map(c => `${c.title}::${c.weekday}::${c.start_time}`))
+                let maxId = existing.reduce((m, c) => Math.max(m, c.id), 0)
+                for (const c of data.classes) {
+                  const key = `${c.title}::${c.weekday}::${c.start_time}`
+                  if (!seen.has(key)) {
+                    maxId += 1
+                    existing.push({ ...c, id: maxId })
+                    seen.add(key)
+                  }
+                }
+                saveToStorage(STORAGE_KEYS.CLASSES, existing)
+              }
+            } else {
+              if (data.tasks) saveToStorage(STORAGE_KEYS.TASKS, data.tasks)
+              if (data.classes) saveToStorage(STORAGE_KEYS.CLASSES, data.classes)
+              if (data.settings) saveToStorage(STORAGE_KEYS.SETTINGS, data.settings)
+              if (data.daily_plans) saveToStorage(STORAGE_KEYS.DAILY_PLANS, data.daily_plans)
+            }
             window.location.reload()
             resolve(true)
           } catch {

@@ -4,7 +4,7 @@ import {
   ChevronRight,
   Plus,
   Calendar,
-  Sparkles,
+  Award,
   Clock,
   Play,
   BarChart2,
@@ -141,6 +141,19 @@ export function WeeklyOverview({
   const plannedMinutes = studyStats?.plannedMinutes || 0
   const adherencePercent = plannedMinutes > 0 ? Math.min(100, Math.round((actualMinutes / plannedMinutes) * 100)) : (actualMinutes > 0 ? 100 : 0)
 
+  const weeklyTaskStats = useMemo(() => {
+    const dayStats = days.map(d => {
+      const total = d.tasks.length
+      const done = d.tasks.filter(t => Boolean(t.completed)).length
+      return { shortName: d.shortName, dateKey: d.dateKey, total, done }
+    })
+    const totalTasks = dayStats.reduce((s, d) => s + d.total, 0)
+    const doneTasks = dayStats.reduce((s, d) => s + d.done, 0)
+    const completionRate = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
+    const maxDayTasks = Math.max(1, ...dayStats.map(d => d.total))
+    return { dayStats, totalTasks, doneTasks, completionRate, maxDayTasks }
+  }, [days])
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Top Header */}
@@ -154,7 +167,7 @@ export function WeeklyOverview({
             onClick={() => setIsReflectionModalOpen(true)}
             title="View weekly study reflection, subject breakdown, and encouraging badges"
           >
-            <Sparkles size={11} /> Reflection Report
+            <Award size={11} /> Reflection Report
           </button>
           <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 500 }}>
             {rangeLabel}
@@ -367,6 +380,65 @@ export function WeeklyOverview({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Weekly Task Completion SVG Chart */}
+      <div className="app-card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+          <span className="section-sublabel" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CheckCircle2 size={13} color="var(--accent-purple)" /> Weekly Task Completion ({weeklyTaskStats.doneTasks}/{weeklyTaskStats.totalTasks})
+          </span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-purple)' }}>
+            {weeklyTaskStats.completionRate}% completion rate
+          </span>
+        </div>
+
+        <svg
+          viewBox="0 0 350 76"
+          style={{ width: '100%', height: 76, overflow: 'visible' }}
+          role="img"
+          aria-label="Weekly task completion chart"
+        >
+          {weeklyTaskStats.dayStats.map((d, idx) => {
+            const x = idx * 50 + 12
+            const barWidth = 26
+            const maxBarH = 48
+            const totalH = d.total > 0 ? Math.max(6, Math.round((d.total / weeklyTaskStats.maxDayTasks) * maxBarH)) : 4
+            const doneH = d.done > 0 ? Math.max(4, Math.round((d.done / weeklyTaskStats.maxDayTasks) * maxBarH)) : 0
+            return (
+              <g key={d.dateKey}>
+                <title>{`${d.shortName}: ${d.done}/${d.total} tasks completed`}</title>
+                <rect
+                  x={x}
+                  y={52 - totalH}
+                  width={barWidth}
+                  height={totalH}
+                  rx={3}
+                  fill="rgba(255, 255, 255, 0.08)"
+                />
+                {doneH > 0 && (
+                  <rect
+                    x={x}
+                    y={52 - doneH}
+                    width={barWidth}
+                    height={doneH}
+                    rx={3}
+                    fill="var(--accent-purple)"
+                  />
+                )}
+                <text
+                  x={x + barWidth / 2}
+                  y={68}
+                  textAnchor="middle"
+                  fontSize={9}
+                  fill="var(--text-muted)"
+                >
+                  {d.shortName}
+                </text>
+              </g>
+            )
+          })}
+        </svg>
       </div>
 
       {/* Bottom 3 Summary Cards */}
