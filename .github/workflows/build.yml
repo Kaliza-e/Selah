@@ -27,7 +27,7 @@ jobs:
           - os: windows-latest
             target: Windows (x64 NSIS)
             platform: win
-            artifact_name: hello-118-24-windows-x64
+            artifact_name: selah-windows-x64
             artifact_patterns: |
               release/*.exe
               release/*.blockmap
@@ -35,7 +35,7 @@ jobs:
           - os: macos-latest
             target: macOS (x64 + arm64 DMG/ZIP)
             platform: mac
-            artifact_name: hello-118-24-macos-universal
+            artifact_name: selah-macos-universal
             artifact_patterns: |
               release/*.dmg
               release/*.zip
@@ -44,7 +44,7 @@ jobs:
           - os: ubuntu-latest
             target: Linux (x64 AppImage + DEB)
             platform: linux
-            artifact_name: hello-118-24-linux-x64
+            artifact_name: selah-linux-x64
             artifact_patterns: |
               release/*.AppImage
               release/*.deb

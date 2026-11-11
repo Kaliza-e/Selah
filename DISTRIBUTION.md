@@ -1,105 +1,70 @@
-# Hello 118:24 — Public Distribution & Security Release Guide
+# Selah Distribution & Code Signing Guide
 
-## 1. Overview & Distribution Strategy
+This guide covers building, signing, notarizing, and publishing **Selah** installers across Windows, macOS, and Linux.
 
-**Hello 118:24** is distributed as a multi-platform desktop application built with Electron 33, React 18, TypeScript, and SQLite.
+## 1. Local Package Builds
 
-- **Primary Distribution Channel:** GitHub Releases (`Kaliza-e/Hello_118_24`).
-- **Build Pipeline:** Automated, repeatable builds orchestrated via GitHub Actions (`.github/workflows/build.yml`) across `windows-latest`, `macos-latest`, and `ubuntu-latest`.
-- **Public Website / Download Page:** `docs/index.html` (deployable directly via Vercel or GitHub Pages).
+Run inside `daylight-desktop/`:
 
----
+```bash
+npm install
+npm run typecheck
+npm run build
+npm test
+```
 
-## 2. Release Artifacts & Platform Matrix
+Platform-specific packages:
 
-| Operating System | Target Package Format | Target Architecture | Generated Artifact Filename | Installation Details |
-| :--- | :--- | :--- | :--- | :--- |
-| **Windows** | NSIS Installer (.exe) | `x64` | `Hello 11824 Setup 0.1.2.exe` | Standard wizard; creates desktop & Start Menu shortcuts with `com.hello11824.desktop` AppUserModelID |
-| **macOS** | Apple Disk Image (.dmg) | Universal (`x64` + `arm64`) | `Hello 11824-0.1.2.dmg` | Drag-to-Applications bundle |
-| **macOS** | Portable ZIP (.zip) | Universal (`x64` + `arm64`) | `Hello 11824-0.1.2-mac.zip` | Standalone application folder |
-| **Linux** | AppImage | `x64` | `Hello-118-24-0.1.2.AppImage` | Portable binary (`chmod +x && ./Hello-118-24-0.1.2.AppImage`) |
-| **Linux** | Debian Package (.deb) | `x64` (amd64) | `hello-118-24_0.1.2_amd64.deb` | System package (`sudo dpkg -i hello-118-24_0.1.2_amd64.deb`) |
+- **Windows (NSIS `.exe` installer):** `npm run package:win`
+- **macOS (Universal `.dmg` & `.zip`):** `npm run package:mac`
+- **Linux (`.AppImage` & `.deb`):** `npm run package:linux`
 
----
-
-## 3. Data Storage & Privacy Policy (Truth-in-Software Disclosure)
-
-### Local Data Storage
-- **Operating System Paths:**
-  - **Windows:** `%APPDATA%\hello-118-24\hello11824.sqlite`
-  - **macOS:** `~/Library/Application Support/hello-118-24/hello11824.sqlite`
-  - **Linux:** `~/.config/hello-118-24/hello11824.sqlite`
-- **Data Stored:**
-  - User timetable entries (`classes`: title, weekday, start_time, end_time, room, notes, color).
-  - Flexible schedules and academic/exam calendar events (`schedule_events`: title, description, category, tags, start_date, start_time, end_date, end_time, recurrence_rule, location, confidence, user_edited).
-  - Event reminders and delivery records (`event_reminders`).
-  - Source document ingestion records with SHA-256 deduplication hashes (`source_documents`).
-  - User to-dos (`tasks`: title, description, due_date, due_time, priority, completed, category, estimated_minutes).
-  - Daily planning notes and packed materials checklists (`daily_plans`).
-  - User interface settings (`settings`: widget_mode, pinned, theme, notification lead times, quiet hours).
-  - Automated database snapshot backups (`userData/backups/`).
-- **Encryption Status:**
-  - SQLite data is stored in standard SQLite WAL format. It is **not** encrypted at rest with SQLCipher. (Documented truthfully to avoid false security claims).
-- **Network Requests:**
-  - **Telemetry / Analytics:** None. Zero tracking or telemetry SDKs are bundled.
-  - **Remote APIs:** None. 100% offline and self-contained; all scheduling, free-time suggestions, OCR extraction, and database transactions execute locally on the device.
+Generated artifacts are written to `daylight-desktop/release/`.
 
 ---
 
-## 4. Code Signing & Notarization Setup
+## 2. Windows Authenticode Signing (SmartScreen Mitigation)
 
-### Windows Code Signing
-To avoid the Windows Defender SmartScreen "Unknown Publisher" warning:
-1. Obtain an EV (Extended Validation) or Standard Authenticode Code Signing Certificate.
-2. In your GitHub Repository Settings (`Settings` -> `Secrets and variables` -> `Actions`), add:
-   - `WIN_CSC_LINK`: Base64-encoded `.pfx` or `.p12` certificate file.
-   - `WIN_CSC_KEY_PASSWORD`: Password for the certificate.
-3. `electron-builder` will automatically detect these environment variables during `npx electron-builder --win`.
+Unsigned Windows installers trigger Microsoft Defender SmartScreen warnings. To sign `Selah Setup X.Y.Z.exe`:
 
-### macOS Signing & Notarization
-To pass macOS Gatekeeper without quarantine flags:
-1. Join the Apple Developer Program.
-2. Generate a **Developer ID Application** certificate and export it as `.p12`.
-3. In GitHub Secrets, configure:
-   - `MAC_CSC_LINK`: Base64-encoded `.p12` certificate file.
-   - `MAC_CSC_KEY_PASSWORD`: Certificate password.
-   - `APPLE_ID`: Your Apple ID email address.
-   - `APPLE_APP_SPECIFIC_PASSWORD`: App-specific password generated at `appleid.apple.com`.
-   - `APPLE_TEAM_ID`: 10-character Apple Developer Team ID.
-4. The workflow in `.github/workflows/build.yml` will automatically sign and notarize `.dmg` and `.zip` artifacts when these secrets are present.
+1. Obtain an EV or OV Code Signing certificate (`.pfx` or hardware HSM/Azure Trusted Signing).
+2. Configure environment variables before running `electron-builder`:
+   - `WIN_CSC_LINK`: Base64-encoded `.pfx` or file path to certificate.
+   - `WIN_CSC_KEY_PASSWORD`: Certificate password.
+3. Run:
+   ```bash
+   npx electron-builder --win nsis --publish never
+   ```
+4. Verify the signature on Windows PowerShell:
+   ```powershell
+   Get-AuthenticodeSignature "release\Selah Setup *.exe"
+   ```
 
 ---
 
-## 5. Safe Public Release Checklist
+## 3. macOS Code Signing & Notarization
 
-Before marking any release as public:
+Apple Gatekeeper requires signed + notarized binaries for smooth installation on macOS:
 
-- [ ] **1. Run Full Local Verification Suite:**
-  ```powershell
-  npm test
-  npm run typecheck
-  npm run build
-  ```
-  Ensure all 42+ tests pass with zero errors.
+1. Generate a **Developer ID Application** certificate in Apple Developer Portal and export as `.p12`.
+2. Create an App-Specific Password at [appleid.apple.com](https://appleid.apple.com).
+3. Configure CI or local environment secrets:
+   - `MAC_CSC_LINK`: Base64 `.p12` certificate
+   - `MAC_CSC_KEY_PASSWORD`: `.p12` password
+   - `APPLE_ID`: Apple Developer email
+   - `APPLE_APP_SPECIFIC_PASSWORD`: App-specific password
+   - `APPLE_TEAM_ID`: 10-character Team ID
+4. Entitlements in `build/entitlements.mac.plist` enable hardened runtime permissions needed by `better-sqlite3` and Electron.
 
-- [ ] **2. Check Version Bump:**
-  - Verify `version` in `package.json` corresponds to the intended release tag (e.g., `0.1.1`).
-  - Update `docs/index.html` download links to point to the new tag.
+---
 
-- [ ] **3. Push Git Tag:**
-  ```bash
-  git tag -a v0.1.1 -m "Release v0.1.1: Security hardened cross-platform desktop release"
-  git push origin v0.1.1
-  ```
+## 4. Publishing a GitHub Release
 
-- [ ] **4. GitHub Actions Build:**
-  - Observe `.github/workflows/build.yml` running across Windows, macOS, and Linux.
-  - Verify that all three runner jobs complete successfully and produce the expected artifacts.
-
-- [ ] **5. Review Draft Release:**
-  - Attach the produced `.exe`, `.dmg`, `.zip`, `.AppImage`, and `.deb` files to the GitHub Release.
-  - Generate SHA-256 checksums for each artifact and paste them into the release notes.
-
-- [ ] **6. Final Human Approval:**
-  - Manually install the `.exe` on a test Windows machine to verify clean launch and data persistence.
-  - Click **Publish Release** in GitHub Releases only after explicit review and approval.
+1. Update `"version"` in `daylight-desktop/package.json` and `APP_CONFIG.version` in `daylight-desktop/src/shared/appConfig.ts`.
+2. Commit changes and push a matching SemVer git tag:
+   ```bash
+   git tag v0.2.0
+   git push origin main --tags
+   ```
+3. Download the verified artifacts from the **Cross-Platform Build & Verification** GitHub Actions workflow (`selah-windows-x64`, `selah-macos-universal`, `selah-linux-x64`) or attach them directly to the GitHub Release.
+4. Ensure filenames follow standard patterns (`.exe` for Windows, `.dmg` for macOS, `.AppImage` / `.deb` for Linux) so the Selah landing website's live GitHub Releases download detector matches each OS automatically.
