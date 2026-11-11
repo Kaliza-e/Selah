@@ -255,7 +255,7 @@ export function TodayView({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Top Banner Row: Greeting + Inspiration Card */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 14, alignItems: 'stretch' }}>
+      <div className="responsive-grid-hero">
         {/* Left: Greeting & Date */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, justifyContent: 'center' }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
@@ -373,7 +373,7 @@ export function TodayView({
       </div>
 
       {/* 2-Column Grid: Today's Schedule + Today's Tasks */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div className="responsive-grid-2">
         {/* ================= LEFT COLUMN: TODAY'S SCHEDULE ================= */}
         <div className="app-card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -11,3 +11,4 @@ export const APP_CONFIG = {
   author: 'Kaliza Esther <kalizaesther5@gmail.com>',
   repoUrl: 'https://github.com/Kaliza-e/Hello_118_24'
 } as const
+

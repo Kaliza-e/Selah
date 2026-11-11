@@ -2,13 +2,12 @@ import { useEffect, useState, useCallback } from 'react'
 import {
   CalendarDays,
   ListTodo,
-  Sparkles,
   BarChart3,
   Settings as SettingsIcon,
   Home,
-  X,
   Heart,
-  CalendarCheck
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react'
 import { Task, ClassItem, ActiveTab, toDateKey } from './types'
 import { APP_CONFIG } from '../../shared/appConfig'
@@ -34,8 +33,16 @@ export default function App() {
   const [pinned, setPinned] = useState(false)
   const [widgetMode, setWidgetMode] = useState<'compact' | 'standard'>('compact')
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [uiScale, setUiScale] = useState<'90' | '100' | '115' | '130'>('100')
   const [toast, setToast] = useState<ToastData | null>(null)
   const [today, setToday] = useState(new Date())
+
+  // Apply UI scale cleanly across the root document
+  useEffect(() => {
+    const scaleFactor = Number(uiScale) / 100
+    ;(document.documentElement.style as unknown as Record<string, string>).zoom = String(scaleFactor)
+  }, [uiScale])
 
   const showToast = useCallback((
     msg: string,
@@ -82,22 +89,30 @@ export default function App() {
       const api = window.hello11824
       if (!api) return
 
-      const [tList, cList, pinSetting, modeSetting, themeSetting] = await Promise.all([
+      const [tList, cList, pinSetting, modeSetting, themeSetting, sidebarSetting, scaleSetting] = await Promise.all([
         api.listTasks(),
         api.listClasses(),
         api.getSetting('pinned'),
         api.getSetting('widget_mode'),
-        api.getSetting('theme')
+        api.getSetting('theme'),
+        api.getSetting('sidebar_collapsed'),
+        api.getSetting('ui_scale')
       ])
 
       setTasks(tList || [])
       setClasses(cList || [])
 
       if (pinSetting !== null && pinSetting !== undefined) {
-        setPinned(pinSetting !== 'false')
+        setPinned(pinSetting === 'true')
       }
       if (modeSetting === 'compact' || modeSetting === 'standard') {
         setWidgetMode(modeSetting)
+      }
+      if (sidebarSetting === 'true') {
+        setSidebarCollapsed(true)
+      }
+      if (scaleSetting === '90' || scaleSetting === '100' || scaleSetting === '115' || scaleSetting === '130') {
+        setUiScale(scaleSetting)
       }
       if (themeSetting === 'light' || themeSetting === 'dark') {
         setTheme(themeSetting)
@@ -165,6 +180,17 @@ export default function App() {
     setTheme(newTheme)
     document.documentElement.setAttribute('data-theme', newTheme)
     await window.hello11824.setSetting('theme', newTheme)
+  }, [])
+
+  const handleToggleSidebar = useCallback(async () => {
+    const next = !sidebarCollapsed
+    setSidebarCollapsed(next)
+    await window.hello11824.setSetting('sidebar_collapsed', String(next))
+  }, [sidebarCollapsed])
+
+  const handleSetUiScale = useCallback(async (newScale: '90' | '100' | '115' | '130') => {
+    setUiScale(newScale)
+    await window.hello11824.setSetting('ui_scale', newScale)
   }, [])
 
   const handleToggleTask = useCallback(
@@ -245,13 +271,13 @@ export default function App() {
 
   const handleTaskCompleted = useCallback(
     async (task: Task, timeSpentSeconds: number) => {
-      await window.hello11824.updateTask(task.id, { completed: 1 })
+      await window.hello11824.updateTask(task.id, { completed: true })
       await refreshTasks()
       const mins = Math.round(timeSpentSeconds / 60)
       showToast(`Completed "${task.title}" (${mins}m studied).`, {
         label: 'Undo',
         onAction: async () => {
-          await window.hello11824.updateTask(task.id, { completed: 0 })
+          await window.hello11824.updateTask(task.id, { completed: false })
           await refreshTasks()
         }
       }, 5000)
@@ -286,34 +312,6 @@ export default function App() {
       {isCompactMode ? (
         // ================= COMPACT FLOATING WIDGET VIEW =================
         <div className="widget-body-compact">
-          {undoTask && (
-            <div
-              style={{
-                background: 'rgba(124, 58, 237, 0.2)',
-                border: '1px solid var(--accent-purple)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '6px 10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontSize: 11.5,
-                color: 'var(--text-primary)'
-              }}
-            >
-              <span>Done: <strong>{undoTask.task.title}</strong></span>
-              <button
-                type="button"
-                className="btn-primary-pill"
-                style={{ padding: '2px 8px', fontSize: 10.5, background: 'var(--accent-purple-btn)' }}
-                onClick={handleUndoDone}
-              >
-                Undo
-              </button>
-            </div>
-          )}
-
-
-
           <TodayView
             today={today}
             classes={classes}
@@ -332,7 +330,7 @@ export default function App() {
             onExpandApp={handleToggleMode}
             onOpenTaskDetails={handleOpenTaskForEdit}
             onRefreshTasks={refreshTasks}
-            onShowMessage={setMessage}
+            onShowMessage={showToast}
             onOpenFocusTimer={task => setFocusTask(task)}
             onScheduleTask={task => setSchedulingTask(task)}
             onOpenRevisionPlan={handleOpenRevisionPlan}
@@ -341,8 +339,8 @@ export default function App() {
       ) : (
         // ================= FULL APPLICATION DASHBOARD VIEW =================
         <div className="dashboard-layout">
-          {/* Left Sidebar without duplicate stacked branding */}
-          <aside className="dashboard-sidebar">
+          {/* Left Responsive Sidebar / Rail / Bottom Nav */}
+          <aside className={`dashboard-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
             {/* Motivational Quote in Sidebar with Tagline */}
             <div className="sidebar-quote-card">
               <span className="sidebar-quote-tag">Plan • Study • Achieve</span>
@@ -352,112 +350,81 @@ export default function App() {
               </div>
             </div>
 
-            {/* Navigation links */}
-            <nav className="sidebar-nav-list">
+            {/* Consolidated 5-Item Navigation Links */}
+            <nav className="sidebar-nav-list" aria-label="Primary Navigation">
               <button
                 type="button"
                 className={`sidebar-nav-item ${activeTab === 'today' ? 'active' : ''}`}
                 onClick={() => setActiveTab('today')}
+                title="Home"
+                aria-label="Home"
               >
-                <Home size={15} /> Home
+                <Home size={16} /> <span className="sidebar-nav-label">Home</span>
               </button>
 
               <button
                 type="button"
-                className={`sidebar-nav-item ${activeTab === 'timetable' ? 'active' : ''}`}
-                onClick={() => setActiveTab('timetable')}
+                className={`sidebar-nav-item ${activeTab === 'schedules' || activeTab === 'timetable' ? 'active' : ''}`}
+                onClick={() => setActiveTab(activeTab === 'timetable' ? 'timetable' : 'schedules')}
+                title="Schedule & Timetable"
+                aria-label="Schedule"
               >
-                <CalendarDays size={15} /> Timetable
+                <CalendarDays size={16} /> <span className="sidebar-nav-label">Schedule</span>
               </button>
 
               <button
                 type="button"
-                className={`sidebar-nav-item ${activeTab === 'schedules' ? 'active' : ''}`}
-                onClick={() => setActiveTab('schedules')}
+                className={`sidebar-nav-item ${activeTab === 'tasks' || activeTab === 'plan' ? 'active' : ''}`}
+                onClick={() => setActiveTab(activeTab === 'plan' ? 'plan' : 'tasks')}
+                title="Tasks & Tomorrow Planner"
+                aria-label="Tasks"
               >
-                <CalendarCheck size={15} /> Schedules
-              </button>
-
-              <button
-                type="button"
-                className={`sidebar-nav-item ${activeTab === 'tasks' ? 'active' : ''}`}
-                onClick={() => setActiveTab('tasks')}
-              >
-                <ListTodo size={15} /> Tasks
-              </button>
-
-              <button
-                type="button"
-                className={`sidebar-nav-item ${activeTab === 'plan' ? 'active' : ''}`}
-                onClick={() => setActiveTab('plan')}
-              >
-                <Sparkles size={15} /> Tomorrow
+                <ListTodo size={16} /> <span className="sidebar-nav-label">Tasks</span>
               </button>
 
               <button
                 type="button"
                 className={`sidebar-nav-item ${activeTab === 'weekly' ? 'active' : ''}`}
                 onClick={() => setActiveTab('weekly')}
+                title="Weekly Overview & Stats"
+                aria-label="Weekly"
               >
-                <BarChart3 size={15} /> Weekly
+                <BarChart3 size={16} /> <span className="sidebar-nav-label">Weekly</span>
               </button>
 
               <button
                 type="button"
                 className={`sidebar-nav-item ${activeTab === 'settings' ? 'active' : ''}`}
                 onClick={() => setActiveTab('settings')}
+                title="Settings"
+                aria-label="Settings"
               >
-                <SettingsIcon size={15} /> Settings
+                <SettingsIcon size={16} /> <span className="sidebar-nav-label">Settings</span>
               </button>
             </nav>
 
-            {/* Bottom discipline quote */}
+            {/* Bottom discipline quote + Collapse toggle */}
             <div className="sidebar-footer-quote">
               <p>“Discipline today builds the freedom you want tomorrow.”</p>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
                 <Heart size={12} color="var(--accent-purple)" />
               </div>
             </div>
+
+            <button
+              type="button"
+              className="sidebar-collapse-btn"
+              onClick={handleToggleSidebar}
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+              <span className="sidebar-nav-label">{sidebarCollapsed ? 'Expand' : 'Collapse'}</span>
+            </button>
           </aside>
 
           {/* Right Main Content */}
           <main className="dashboard-main-area">
-            {undoTask && (
-              <div
-                style={{
-                  background: 'rgba(124, 58, 237, 0.2)',
-                  border: '1px solid var(--accent-purple)',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: '7px 14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  fontSize: 12,
-                  color: 'var(--text-primary)',
-                  boxShadow: '0 2px 10px rgba(124, 58, 237, 0.25)'
-                }}
-              >
-                <span>
-                  Marked as done: <strong>{undoTask.task.title}</strong>
-                </span>
-                <button
-                  type="button"
-                  className="btn-primary-pill"
-                  style={{
-                    padding: '3px 12px',
-                    fontSize: 11,
-                    background: 'var(--accent-purple-btn)',
-                    cursor: 'pointer'
-                  }}
-                  onClick={handleUndoDone}
-                >
-                  Undo (60s)
-                </button>
-              </div>
-            )}
-
-
-
             {activeTab === 'today' && (
               <TodayView
                 today={today}
@@ -480,43 +447,85 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'timetable' && (
-              <TimetableManager
-                classes={classes}
-                onRefreshClasses={refreshClasses}
-                onShowMessage={showToast}
-              />
+            {(activeTab === 'schedules' || activeTab === 'timetable') && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%', minHeight: 0 }}>
+                <div className="subnav-bar">
+                  <div className="day-pills-row">
+                    <button
+                      type="button"
+                      className={`day-pill-btn ${activeTab === 'schedules' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('schedules')}
+                    >
+                      Events & Calendars
+                    </button>
+                    <button
+                      type="button"
+                      className={`day-pill-btn ${activeTab === 'timetable' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('timetable')}
+                    >
+                      Weekly Timetable
+                    </button>
+                  </div>
+                </div>
+
+                {activeTab === 'schedules' ? (
+                  <SchedulesView onShowMessage={showToast} />
+                ) : (
+                  <TimetableManager
+                    classes={classes}
+                    onRefreshClasses={refreshClasses}
+                    onShowMessage={showToast}
+                  />
+                )}
+              </div>
             )}
 
-            {activeTab === 'schedules' && (
-              <SchedulesView onShowMessage={showToast} />
-            )}
+            {(activeTab === 'tasks' || activeTab === 'plan') && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%', minHeight: 0 }}>
+                <div className="subnav-bar">
+                  <div className="day-pills-row">
+                    <button
+                      type="button"
+                      className={`day-pill-btn ${activeTab === 'tasks' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('tasks')}
+                    >
+                      All Tasks
+                    </button>
+                    <button
+                      type="button"
+                      className={`day-pill-btn ${activeTab === 'plan' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('plan')}
+                    >
+                      Tomorrow Planner
+                    </button>
+                  </div>
+                </div>
 
-            {activeTab === 'tasks' && (
-              <TasksView
-                tasks={tasks}
-                today={today}
-                onToggleTask={handleToggleTask}
-                onDeleteTask={handleDeleteTask}
-                onRefreshTasks={refreshTasks}
-                onShowMessage={showToast}
-                onOpenFocusTimer={task => setFocusTask(task)}
-                onScheduleTask={task => setSchedulingTask(task)}
-              />
-            )}
-
-            {activeTab === 'plan' && (
-              <TomorrowPlanner
-                today={today}
-                classes={classes}
-                tasks={tasks}
-                onRefreshTasks={refreshTasks}
-                onToggleTask={handleToggleTask}
-                onDeleteTask={handleDeleteTask}
-                onShowMessage={showToast}
-                onOpenFocusTimer={task => setFocusTask(task)}
-                onScheduleTask={task => setSchedulingTask(task)}
-              />
+                {activeTab === 'tasks' ? (
+                  <TasksView
+                    tasks={tasks}
+                    today={today}
+                    onToggleTask={handleToggleTask}
+                    onDeleteTask={handleDeleteTask}
+                    onRefreshTasks={refreshTasks}
+                    onShowMessage={showToast}
+                    onOpenFocusTimer={task => setFocusTask(task)}
+                    onScheduleTask={task => setSchedulingTask(task)}
+                  />
+                ) : (
+                  <TomorrowPlanner
+                    today={today}
+                    classes={classes}
+                    tasks={tasks}
+                    onRefreshTasks={refreshTasks}
+                    onToggleTask={handleToggleTask}
+                    onDeleteTask={handleDeleteTask}
+                    onShowMessage={showToast}
+                    onOpenFocusTimer={task => setFocusTask(task)}
+                    onScheduleTask={task => setSchedulingTask(task)}
+                  />
+                )}
+              </div>
             )}
 
             {activeTab === 'weekly' && (
@@ -539,6 +548,8 @@ export default function App() {
                 onToggleMode={handleToggleMode}
                 theme={theme}
                 onThemeChange={handleSetTheme}
+                uiScale={uiScale}
+                onUiScaleChange={handleSetUiScale}
                 onRefreshAll={async () => {
                   await Promise.all([refreshTasks(), refreshClasses()])
                 }}

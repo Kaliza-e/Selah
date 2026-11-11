@@ -113,3 +113,4 @@ export function calculateMinutesBetween(startTime: string, endTime: string): num
   if (diff < 0) diff += 24 * 60 // cross midnight
   return diff > 0 && diff <= MAX_DURATION_MINUTES ? diff : null
 }
+

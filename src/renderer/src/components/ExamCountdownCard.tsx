@@ -223,7 +223,7 @@ export function ExamCountdownCard({
                 onClick={() => onOpenRevisionPlan(nextExam.title, nextExam.start_date)}
                 title="Create structured revision plan for this exam"
               >
-                <Sparkles size={11} /> Auto Revision Plan
+                <BookOpen size={11} /> Auto Revision Plan
               </button>
             )}
             <button

@@ -84,7 +84,7 @@ export function WeeklyReflectionModal({
         {/* Header */}
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Sparkles size={18} color="var(--accent-purple)" />
+            <TrendingUp size={18} color="var(--accent-purple)" />
             <span style={{ fontWeight: 700, fontSize: 15 }}>Weekly Reflection Report</span>
           </div>
           <button className="win-btn" onClick={onClose}>

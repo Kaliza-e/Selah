@@ -19,6 +19,8 @@ interface SettingsViewProps {
   onToggleMode: () => void
   theme: 'dark' | 'light'
   onThemeChange: (theme: 'dark' | 'light') => void
+  uiScale: '90' | '100' | '115' | '130'
+  onUiScaleChange: (scale: '90' | '100' | '115' | '130') => void
   onRefreshAll: () => Promise<void>
   onShowMessage: (msg: string) => void
 }
@@ -30,6 +32,8 @@ export function SettingsView({
   onToggleMode,
   theme,
   onThemeChange,
+  uiScale,
+  onUiScaleChange,
   onRefreshAll,
   onShowMessage
 }: SettingsViewProps) {
@@ -290,6 +294,27 @@ export function SettingsView({
               >
                 <Sun size={12} /> Light
               </button>
+            </div>
+          </div>
+
+          <div className="setting-toggle-row">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span className="setting-title">Interface scale</span>
+              <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
+                Adjust text and control zoom
+              </span>
+            </div>
+            <div className="theme-toggle-group" role="group" aria-label="Interface scale">
+              {(['90', '100', '115', '130'] as const).map(s => (
+                <button
+                  key={s}
+                  type="button"
+                  className={`theme-pill-btn ${uiScale === s ? 'active' : ''}`}
+                  onClick={() => onUiScaleChange(s)}
+                >
+                  {s}%
+                </button>
+              ))}
             </div>
           </div>
         </div>

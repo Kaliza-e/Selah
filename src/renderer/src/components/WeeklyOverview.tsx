@@ -182,11 +182,8 @@ export function WeeklyOverview({
 
       {/* 7-Day Timeline Grid (Classes & Scheduled Tasks) */}
       <div
-        className="app-card"
+        className="app-card responsive-grid-7"
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
-          gap: 8,
           minHeight: 190,
           padding: 14
         }}
@@ -299,7 +296,7 @@ export function WeeklyOverview({
       </div>
 
       {/* Phase 2: Time Studied Per Day & Planned vs Actual Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div className="responsive-grid-2">
         {/* Time Studied Per Day Bar Chart */}
         <div className="app-card" style={{ padding: 12, gap: 10, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -373,7 +370,7 @@ export function WeeklyOverview({
       </div>
 
       {/* Bottom 3 Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+      <div className="responsive-grid-3">
         {/* Card 1: Upcoming Deadlines */}
         <div className="app-card" style={{ padding: 12, gap: 8 }}>
           <span className="section-sublabel" style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>

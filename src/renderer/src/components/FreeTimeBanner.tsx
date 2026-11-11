@@ -222,7 +222,7 @@ export function FreeTimeBanner({
       <div className="free-time-header">
         <div className="free-time-tag-badge">
           <span className="free-time-pulse-dot" />
-          <Sparkles size={13} color="var(--accent-purple)" />
+          <Lightbulb size={13} color="var(--accent-purple)" />
           <span>FREE TIME PROGRESS OPPORTUNITY</span>
         </div>
 

@@ -122,8 +122,8 @@ export function TomorrowPlanner({
         </h2>
       </div>
 
-      {/* 2-Column Grid Matching Panel 3 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      {/* 2-Column Responsive Grid */}
+      <div className="responsive-grid-2">
         {/* ================= LEFT COLUMN ================= */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Subjects */}

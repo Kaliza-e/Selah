@@ -236,7 +236,7 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
 
   // Export handlers
   async function handleExportPdf() {
-    setIsExportMenuOpen(false)
+    setExportAnchor(null)
     try {
       const res = await window.hello11824.exportSchedulePdf(filteredEvents)
       if (!res.canceled && res.filePath) {
@@ -249,7 +249,7 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
   }
 
   async function handleExportExcel() {
-    setIsExportMenuOpen(false)
+    setExportAnchor(null)
     try {
       const res = await window.hello11824.exportScheduleExcel(filteredEvents)
       if (!res.canceled && res.filePath) {
@@ -262,7 +262,7 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
   }
 
   async function handleExportCsv() {
-    setIsExportMenuOpen(false)
+    setExportAnchor(null)
     try {
       const res = await window.hello11824.exportScheduleCsv(filteredEvents)
       if (!res.canceled && res.filePath) {
@@ -275,7 +275,7 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
   }
 
   async function handleExportIcs() {
-    setIsExportMenuOpen(false)
+    setExportAnchor(null)
     try {
       const res = await window.hello11824.exportScheduleIcs(filteredEvents)
       if (!res.canceled && res.filePath) {
