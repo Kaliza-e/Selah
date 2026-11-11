@@ -527,7 +527,7 @@ export function createBrowserMockApi(): HelloAPI {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `hello11824-backup-${new Date().toISOString().slice(0, 10)}.json`
+      a.download = `selah-backup-${new Date().toISOString().slice(0, 10)}.json`
       a.click()
       URL.revokeObjectURL(url)
       return true

@@ -17,14 +17,6 @@ import {
 } from 'lucide-react'
 import type { ActiveTimer } from '../types'
 
-function getCurrentWeekNumber(d = new Date()): number {
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
-  const dayNum = date.getUTCDay() || 7
-  date.setUTCDate(date.getUTCDate() + 4 - dayNum)
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1))
-  return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
-}
-
 interface TitleBarProps {
   pinned: boolean
   onTogglePin: () => void
@@ -100,7 +92,6 @@ export function TitleBar({
         <div className="brand-title">
           <span className="brand-script">{APP_CONFIG.name}</span>
         </div>
-        <span className="week-chip" title="Current calendar week">Week {getCurrentWeekNumber()}</span>
 
         {freeRemindersActive && (
           <span

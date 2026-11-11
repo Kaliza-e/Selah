@@ -1463,7 +1463,7 @@ ipcMain.handle('schedules:export-pdf', async (event, customEvents?: any[]) => {
   const events = customEvents && customEvents.length > 0 ? customEvents : listScheduleEvents({})
   const saveResult = await dialog.showSaveDialog(mainWindow, {
     title: 'Export Schedule to Printable PDF',
-    defaultPath: `hello11824-schedule-${new Date().toISOString().slice(0, 10)}.pdf`,
+    defaultPath: `selah-schedule-${new Date().toISOString().slice(0, 10)}.pdf`,
     filters: [{ name: 'PDF Documents (*.pdf)', extensions: ['pdf'] }]
   })
 
@@ -1507,7 +1507,7 @@ ipcMain.handle('schedules:export-xlsx', async (event, customEvents?: any[]) => {
   const events = customEvents && customEvents.length > 0 ? customEvents : listScheduleEvents({})
   const saveResult = await dialog.showSaveDialog(mainWindow, {
     title: 'Export Schedule to Excel Spreadsheet',
-    defaultPath: `hello11824-schedule-${new Date().toISOString().slice(0, 10)}.xlsx`,
+    defaultPath: `selah-schedule-${new Date().toISOString().slice(0, 10)}.xlsx`,
     filters: [{ name: 'Excel Workbook (*.xlsx)', extensions: ['xlsx'] }]
   })
 
@@ -1527,7 +1527,7 @@ ipcMain.handle('schedules:export-csv', async (event, customEvents?: any[]) => {
   const events = customEvents && customEvents.length > 0 ? customEvents : listScheduleEvents({})
   const saveResult = await dialog.showSaveDialog(mainWindow, {
     title: 'Export Schedule to CSV',
-    defaultPath: `hello11824-schedule-${new Date().toISOString().slice(0, 10)}.csv`,
+    defaultPath: `selah-schedule-${new Date().toISOString().slice(0, 10)}.csv`,
     filters: [{ name: 'CSV File (*.csv)', extensions: ['csv'] }]
   })
 
@@ -1547,7 +1547,7 @@ ipcMain.handle('schedules:export-ics', async (event, customEvents?: any[]) => {
   const events = customEvents && customEvents.length > 0 ? customEvents : listScheduleEvents({})
   const saveResult = await dialog.showSaveDialog(mainWindow, {
     title: 'Export Schedule to iCalendar (.ics)',
-    defaultPath: `hello11824-schedule-${new Date().toISOString().slice(0, 10)}.ics`,
+    defaultPath: `selah-schedule-${new Date().toISOString().slice(0, 10)}.ics`,
     filters: [{ name: 'iCalendar (*.ics)', extensions: ['ics'] }]
   })
 
@@ -1676,7 +1676,7 @@ ipcMain.handle('data:export-encrypted', async (event, passphrase: string) => {
   const data = exportAllData()
   const saveResult = await dialog.showSaveDialog(mainWindow, {
     title: 'Export Encrypted Backup',
-    defaultPath: `hello11824-encrypted-${new Date().toISOString().slice(0, 10)}.enc`,
+    defaultPath: `selah-encrypted-${new Date().toISOString().slice(0, 10)}.enc`,
     filters: [{ name: 'Encrypted Backup (*.enc)', extensions: ['enc'] }]
   })
 

@@ -54,17 +54,18 @@ Selah is designed as a focused, calming desktop companion for school, productivi
   - 7-day horizon displaying classes and deadlines across the full week.
   - Weekly summary metrics: total classes, total deadlines, and completed items.
 - **Settings & Data Management**:
+  - Dark, Light, and System theme modes with customizable accent colors and interface zoom scale (90%–130%).
   - Toggle launch on login, start minimized, always-on-top, and widget mode.
   - Desktop reminder settings: class reminder lead times (5, 10, 15, 30 min) and task due alerts.
   - Smart Free-Time Suggestions: toggle suggestions, configure quiet hours, and set minimum gap durations.
-  - Full data backup export to JSON and restore from JSON with pre-restore snapshot protection.
-  - Psalm 118:24 theme display toggle.
+  - Full data backup export to JSON and restore from JSON (with **Merge** or **Replace** modes) plus AES-256 encrypted `.enc` backups.
+  - Global `Ctrl+K` Command Palette and `Ctrl+Shift+Space` quick task capture.
 
 ---
 
-## 🔒 Security Architecture & Hardening Checklist
+## Security Architecture & Hardening Checklist
 
-Hello 118:24 follows the official Electron security guidelines and implements production-grade defense-in-depth:
+Selah follows the official Electron security guidelines and implements production-grade defense-in-depth:
 
 ### Security Checklist
 - [x] **Context Isolation & Sandboxing**: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, and `webSecurity: true`. No `remote` module.
@@ -82,7 +83,7 @@ Hello 118:24 follows the official Electron security guidelines and implements pr
 
 ---
 
-## 🗄️ SQLite Database Schema & Migrations
+## SQLite Database Schema & Migrations
 
 The database is stored locally in the operating system's standard user data directory with WAL mode enabled:
 - **Windows:** `%APPDATA%\selah\selah.sqlite`
@@ -91,7 +92,7 @@ The database is stored locally in the operating system's standard user data dire
 
 Tables:
 - `classes`: `id`, `title`, `weekday`, `start_time`, `end_time`, `room`, `notes`, `color`, `created_at`
-- `tasks`: `id`, `title`, `description`, `due_date`, `due_time`, `priority`, `completed`, `category`, `class_id`, `estimated_minutes`, `created_at`
+- `tasks`: `id`, `title`, `description`, `due_date`, `due_time`, `priority`, `completed`, `category`, `class_id`, `estimated_minutes`, `recurrence_rule`, `subtasks`, `created_at`
 - `daily_plans`: `plan_date`, `notes`, `materials_checked`, `created_at`, `updated_at`
 - `settings`: `key`, `value`
 - `import_history`: `id`, `file_name`, `file_type`, `imported_count`, `imported_at`
@@ -101,7 +102,7 @@ Tables:
 
 ---
 
-## 🚀 Running and Developing Locally
+## Running and Developing Locally
 
 ### Prerequisites
 - Node.js 20 or 22 (LTS recommended)
@@ -116,7 +117,7 @@ npm install
 # 2. Run TypeScript typecheck
 npm run typecheck
 
-# 3. Run automated tests (58/58 tests pass)
+# 3. Run automated tests (96/96 tests pass)
 npm test
 
 # 4. Start the app in development mode
@@ -128,7 +129,7 @@ npm run build
 
 ---
 
-## 📦 Cross-Platform Packaging
+## Cross-Platform Packaging
 
 ```powershell
 # Windows NSIS installer
