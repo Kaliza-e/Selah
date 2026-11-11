@@ -110,3 +110,4 @@ test('Theme resolution respects system mode preference', () => {
   assert.equal(resolveEffectiveTheme('system', true), 'dark')
   assert.equal(resolveEffectiveTheme('system', false), 'light')
 })
+

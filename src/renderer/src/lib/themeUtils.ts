@@ -110,3 +110,4 @@ export function applyAccentPalette(root: HTMLElement, accentId: AccentColorId): 
   root.style.setProperty('--btn-active-bg', palette.bg)
   root.style.setProperty('--text-on-accent', palette.onAccent)
 }
+
