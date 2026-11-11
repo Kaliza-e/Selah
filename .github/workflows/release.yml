@@ -204,12 +204,19 @@ jobs:
           path: artifacts
 
       - name: Collect Assets & Generate SHA-256 Checksums
+        shell: bash
         run: |
           mkdir -p dist-release
           find artifacts -maxdepth 2 -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" -o -name "*.blockmap" \) -exec mv {} dist-release/ \;
           (
             cd dist-release
-            sha256sum *.exe *.dmg *.zip *.AppImage *.deb *.rpm > SHA256SUMS.txt
+            shopt -s nullglob
+            files=(*.exe *.dmg *.zip *.AppImage *.deb *.rpm)
+            if [ "${#files[@]}" -eq 0 ]; then
+              echo "::error::No release installer binaries found in dist-release"
+              exit 1
+            fi
+            sha256sum "${files[@]}" > SHA256SUMS.txt
           )
           cat dist-release/SHA256SUMS.txt
 

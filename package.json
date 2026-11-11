@@ -1,6 +1,6 @@
 {
   "name": "selah",
-  "version": "0.1.2",
+  "version": "0.3.0",
   "private": true,
   "description": "Selah — Focused desktop planner, calendar, and companion",
   "author": "Kaliza Esther <kalizaesther5@gmail.com>",
@@ -12,7 +12,8 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "electron test/runner.mjs",
+    "test": "node test/runner.mjs",
+    "version": "node -e \"const fs=require('fs'),{execSync}=require('child_process'); const v=require('./package.json').version; const p='src/shared/appConfig.ts'; fs.writeFileSync(p, fs.readFileSync(p,'utf8').replace(/version:\\s*'[^']+'/, 'version: \\''+v+'\\'')); try{execSync('git add '+p)}catch{}\"",
     "clean": "node -e \"const fs = require('fs'); ['release', 'out'].forEach(d => { try { fs.rmSync(d, { recursive: true, force: true }); } catch {} });\"",
     "clean:win": "powershell -Command \"Remove-Item -Recurse -Force release, out -ErrorAction SilentlyContinue\"",
     "package:win": "powershell -Command \"Get-Process -Name 'Selah', 'electron' -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 300; Remove-Item -Recurse -Force release -ErrorAction SilentlyContinue; exit 0\" && npm run build && electron-builder --win",

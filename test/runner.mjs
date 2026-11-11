@@ -18,7 +18,7 @@ try {
   canLoadSqlite = false
 }
 
-if (!canLoadSqlite && !process.versions.electron && !process.env.ELECTRON_RUN_AS_NODE) {
+if (!canLoadSqlite && !process.versions.electron && !process.env.SELAH_TEST_ELECTRON_CHILD) {
   let binary = null
   try {
     binary = require('electron')
@@ -35,7 +35,7 @@ if (!canLoadSqlite && !process.versions.electron && !process.env.ELECTRON_RUN_AS
   if (binary && existsSync(binary)) {
     const res = spawnSync(binary, [resolve('test/runner.mjs')], {
       stdio: 'inherit',
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', SELAH_TEST_ELECTRON_CHILD: '1' }
     })
     process.exit(res.status ?? 0)
   }
