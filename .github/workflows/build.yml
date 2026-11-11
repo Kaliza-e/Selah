@@ -43,7 +43,7 @@ jobs:
               release/*.blockmap
               release/SHA256SUMS-macos.txt
 
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             target: Linux (x64 AppImage + DEB + RPM)
             platform: linux
             artifact_name: selah-linux-x64

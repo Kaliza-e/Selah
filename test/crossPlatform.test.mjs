@@ -59,7 +59,10 @@ test('Cross-Platform: GitHub release workflow and SQLite backup persistence are 
   const releaseWorkflow = readFileSync(releaseWorkflowPath, 'utf8')
   assert.ok(releaseWorkflow.includes('windows-latest'), 'Release workflow must build on windows-latest')
   assert.ok(releaseWorkflow.includes('macos-latest'), 'Release workflow must build on macos-latest')
-  assert.ok(releaseWorkflow.includes('ubuntu-latest'), 'Release workflow must build on ubuntu-latest')
+  assert.ok(
+    releaseWorkflow.includes('ubuntu-22.04') || releaseWorkflow.includes('ubuntu-latest'),
+    'Release workflow must build on an Ubuntu runner'
+  )
   assert.ok(releaseWorkflow.includes('SHA256SUMS.txt'), 'Release workflow must generate SHA256SUMS.txt')
   assert.ok(releaseWorkflow.includes('softprops/action-gh-release'), 'Release workflow must publish release assets')
 

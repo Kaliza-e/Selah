@@ -149,6 +149,7 @@
     "linux": {
       "icon": "build/icon.png",
       "category": "Education",
+      "synopsis": "Focused desktop planner, calendar, and companion",
       "maintainer": "Kaliza Esther <kalizaesther5@gmail.com>",
       "artifactName": "${name}-${version}-${arch}.${ext}",
       "target": [
@@ -187,6 +188,7 @@
       ]
     },
     "rpm": {
+      "compression": "xz",
       "depends": [
         "libnotify",
         "nss",
