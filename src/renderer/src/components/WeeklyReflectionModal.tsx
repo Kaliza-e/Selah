@@ -51,13 +51,13 @@ export function WeeklyReflectionModal({
   startDate,
   endDate
 }: WeeklyReflectionModalProps) {
-  if (!isOpen) return null
-
   const [report, setReport] = useState<WeeklyReflectionReport | null>(null)
   const [streakData, setStreakData] = useState<UserStreakAndBadges | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!isOpen) return
+    setLoading(true)
     Promise.all([
       window.hello11824?.getWeeklyReflectionReport?.(startDate, endDate),
       window.hello11824?.getUserStreakAndBadges?.()
@@ -68,7 +68,9 @@ export function WeeklyReflectionModal({
       })
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [startDate, endDate])
+  }, [isOpen, startDate, endDate])
+
+  if (!isOpen) return null
 
   const maxSubjectSeconds = report?.subjectHours
     ? Math.max(...report.subjectHours.map(s => s.hours * 60 + s.minutes), 60)
@@ -77,8 +79,8 @@ export function WeeklyReflectionModal({
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div
-        className="modal-card"
-        style={{ width: 560, maxWidth: '95vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+        className="modal-content"
+        style={{ width: 560, maxWidth: '95vw', maxHeight: '90vh' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -93,7 +95,7 @@ export function WeeklyReflectionModal({
         </div>
 
         {/* Content */}
-        <div style={{ padding: 16, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="modal-body" style={{ padding: 16, gap: 14 }}>
           {loading ? (
             <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-muted)' }}>
               Compiling your weekly reflection...

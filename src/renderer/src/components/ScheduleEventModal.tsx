@@ -46,8 +46,6 @@ export function ScheduleEventModal({
   initialEvent,
   onSave
 }: ScheduleEventModalProps) {
-  if (!isOpen) return null
-
   const isEditing = Boolean(initialEvent && initialEvent.id)
   const todayStr = new Date().toISOString().slice(0, 10)
 
@@ -74,6 +72,8 @@ export function ScheduleEventModal({
   const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
+    if (!isOpen) return
+    setErrorMsg('')
     if (initialEvent) {
       setTitle(initialEvent.title || '')
       setDescription(initialEvent.description || '')
@@ -92,8 +92,19 @@ export function ScheduleEventModal({
           }))
         )
       }
+    } else {
+      setTitle('')
+      setDescription('')
+      setCategory('Academic Calendar')
+      setStartDate(todayStr)
+      setStartTime('')
+      setEndDate(todayStr)
+      setEndTime('')
+      setIsAllDay(true)
+      setLocation('')
+      setReminders([{ trigger_offset_minutes: 10, all_day_delivery_time: '08:00' }])
     }
-  }, [initialEvent])
+  }, [initialEvent, isOpen, todayStr])
 
   function handleAddReminder(offsetMinutes: number = 60) {
     setReminders(prev => [...prev, { trigger_offset_minutes: offsetMinutes, all_day_delivery_time: allDayTime }])
@@ -150,6 +161,8 @@ export function ScheduleEventModal({
       setIsSubmitting(false)
     }
   }
+
+  if (!isOpen) return null
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>

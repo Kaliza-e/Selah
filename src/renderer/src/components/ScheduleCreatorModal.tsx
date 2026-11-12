@@ -56,8 +56,6 @@ export function ScheduleCreatorModal({
   initialSubject,
   initialDate
 }: ScheduleCreatorModalProps) {
-  if (!isOpen) return null
-
   const todayStr = toDateKey(new Date())
   const [template, setTemplate] = useState<TemplateType>(initialTemplate || 'study_plan')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -86,6 +84,7 @@ export function ScheduleCreatorModal({
 
   // Synchronize when opened with new initial props
   useEffect(() => {
+    if (!isOpen) return
     if (initialTemplate) setTemplate(initialTemplate)
     if (initialSubject) {
       setEpSubject(initialSubject)
@@ -94,7 +93,7 @@ export function ScheduleCreatorModal({
     if (initialDate) {
       setEpExamDate(initialDate)
     }
-  }, [initialTemplate, initialSubject, initialDate])
+  }, [isOpen, initialTemplate, initialSubject, initialDate])
   const [epExamTime, setEpExamTime] = useState('09:00')
   const [epExamEndTime, setEpExamEndTime] = useState('11:30')
   const [epRoom, setEpRoom] = useState('')
@@ -307,11 +306,13 @@ export function ScheduleCreatorModal({
     }
   }
 
+  if (!isOpen) return null
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div
-        className="modal-card"
-        style={{ width: 620, maxWidth: '95vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+        className="modal-content"
+        style={{ width: 620, maxWidth: '95vw', maxHeight: '90vh' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -362,7 +363,7 @@ export function ScheduleCreatorModal({
         </div>
 
         {/* Form Body */}
-        <div style={{ padding: 16, overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="modal-body" style={{ padding: 16, gap: 14 }}>
           {/* ================= 1. STUDY PLAN ================= */}
           {template === 'study_plan' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
