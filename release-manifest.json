@@ -1,0 +1,111 @@
+{
+  "tag_name": "v0.3.3",
+  "name": "Selah 0.3.3",
+  "published_at": "2026-11-12T09:31:17.551Z",
+  "html_url": "https://github.com/Kaliza-e/Selah/releases/tag/v0.3.3",
+  "body": "- feat(release): auto-release on main push, sync release-manifest.json, and add in-app update checker\n- fix(ui): run hooks before early returns in schedule and reflection modals\n- fix(ui): enable vertical scrolling inside form modals and pin modal headers/footers\n- fix(docs): align GitHub repo URL to Kaliza-e/Selah and pre-populate direct v0.3.2 downloads",
+  "prerelease": false,
+  "sha256sums": {
+    "Selah-Portable-0.3.3-x64.exe": "b25d639e0cc3c71208fd7f51fa00d56c10916e68a296a9e2c8cdc40c7fd215cc",
+    "Selah-Setup-0.3.3-x64.exe": "387dd2dc0b477b6d4ef8b66fefddd2c522295b36bad1bae94fcb2289b9363101",
+    "Selah-0.3.3-arm64.dmg": "0930ab57f029e63bf43efeaf3a94c42791d43dae6652374fba5117a4684cb899",
+    "Selah-0.3.3-x64.dmg": "09bc2f960d55cb55e04b29ec0ff43d3e2d3c9339e9ea5960e727c09f1f4fa5ed",
+    "Selah-0.3.3-arm64.zip": "6734be68519ef11f140b5637c648e7e7e2a7a4e93f28b8f1a26188b381898801",
+    "Selah-0.3.3-x64.zip": "c40ef4fe86b07b822e570640c7e4a04856d1871d49d77eb490776964327f0641",
+    "selah-0.3.3-x86_64.AppImage": "79820ba23245ba9953125ef85b7134b99d5403995219f233fc5aaf948dcacd74",
+    "selah-0.3.3-amd64.deb": "4b3655d2b6e3e014c2153fae80364858fdadce40b3a639d42ad749de33dbf441",
+    "selah-0.3.3-x86_64.rpm": "52a838841c1a626858d8be717a30c231a580bcf729b0fb86b20f4a46b044ba81"
+  },
+  "assets": [
+    {
+      "id": 1,
+      "name": "SHA256SUMS.txt",
+      "size": 806,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/SHA256SUMS.txt"
+    },
+    {
+      "id": 2,
+      "name": "Selah-0.3.3-arm64.dmg",
+      "size": 132970943,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/Selah-0.3.3-arm64.dmg"
+    },
+    {
+      "id": 3,
+      "name": "Selah-0.3.3-arm64.dmg.blockmap",
+      "size": 140081,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/Selah-0.3.3-arm64.dmg.blockmap"
+    },
+    {
+      "id": 4,
+      "name": "Selah-0.3.3-arm64.zip",
+      "size": 127978629,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/Selah-0.3.3-arm64.zip"
+    },
+    {
+      "id": 5,
+      "name": "Selah-0.3.3-arm64.zip.blockmap",
+      "size": 134119,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/Selah-0.3.3-arm64.zip.blockmap"
+    },
+    {
+      "id": 6,
+      "name": "Selah-0.3.3-x64.dmg",
+      "size": 137554576,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/Selah-0.3.3-x64.dmg"
+    },
+    {
+      "id": 7,
+      "name": "Selah-0.3.3-x64.dmg.blockmap",
+      "size": 144493,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/Selah-0.3.3-x64.dmg.blockmap"
+    },
+    {
+      "id": 8,
+      "name": "Selah-0.3.3-x64.zip",
+      "size": 132605824,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/Selah-0.3.3-x64.zip"
+    },
+    {
+      "id": 9,
+      "name": "Selah-0.3.3-x64.zip.blockmap",
+      "size": 138921,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/Selah-0.3.3-x64.zip.blockmap"
+    },
+    {
+      "id": 10,
+      "name": "Selah-Portable-0.3.3-x64.exe",
+      "size": 104780143,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/Selah-Portable-0.3.3-x64.exe"
+    },
+    {
+      "id": 11,
+      "name": "Selah-Setup-0.3.3-x64.exe",
+      "size": 105028759,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/Selah-Setup-0.3.3-x64.exe"
+    },
+    {
+      "id": 12,
+      "name": "Selah-Setup-0.3.3-x64.exe.blockmap",
+      "size": 109383,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/Selah-Setup-0.3.3-x64.exe.blockmap"
+    },
+    {
+      "id": 13,
+      "name": "selah-0.3.3-amd64.deb",
+      "size": 88521528,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/selah-0.3.3-amd64.deb"
+    },
+    {
+      "id": 14,
+      "name": "selah-0.3.3-x86_64.AppImage",
+      "size": 143231752,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/selah-0.3.3-x86_64.AppImage"
+    },
+    {
+      "id": 15,
+      "name": "selah-0.3.3-x86_64.rpm",
+      "size": 88318317,
+      "browser_download_url": "https://github.com/Kaliza-e/Selah/releases/download/v0.3.3/selah-0.3.3-x86_64.rpm"
+    }
+  ]
+}
