@@ -8,7 +8,11 @@ import {
   Monitor,
   X,
   KeyRound,
-  Upload
+  Upload,
+  RefreshCw,
+  ExternalLink,
+  Download,
+  CheckCircle2
 } from 'lucide-react'
 
 export type AccentColorId = 'violet' | 'indigo' | 'blue' | 'emerald' | 'rose' | 'amber'
@@ -70,8 +74,20 @@ export function SettingsView({
   const [quietHoursStart, setQuietHoursStart] = useState('21:00')
   const [quietHoursEnd, setQuietHoursEnd] = useState('07:00')
 
-  // App Information
-  const [appVersion, setAppVersion] = useState<string>('0.1.2')
+  // App Information & Updates
+  const [appVersion, setAppVersion] = useState<string>(APP_CONFIG.version)
+  const [checkingUpdate, setCheckingUpdate] = useState(false)
+  const [updateInfo, setUpdateInfo] = useState<{
+    ok: boolean
+    currentVersion: string
+    latestVersion: string
+    latestTag: string
+    hasUpdate: boolean
+    releaseName?: string
+    releaseNotes?: string
+    downloadUrl: string
+    error?: string
+  } | null>(null)
   const [isPinConfigured, setIsPinConfigured] = useState(false)
   const [showPinModal, setShowPinModal] = useState(false)
   const [pinInput, setPinInput] = useState('')
@@ -284,6 +300,26 @@ export function SettingsView({
       onShowMessage('App Lock disabled.')
     } catch (err) {
       onShowMessage(`Failed to remove PIN: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  async function handleCheckForUpdates() {
+    if (!window.hello11824?.checkForUpdates) return
+    setCheckingUpdate(true)
+    try {
+      const result = await window.hello11824.checkForUpdates()
+      setUpdateInfo(result)
+      if (result.ok) {
+        onShowMessage(
+          result.hasUpdate
+            ? `Selah ${result.latestTag} is available on the website!`
+            : `Selah v${result.currentVersion} is up to date.`
+        )
+      } else {
+        onShowMessage(result.error || 'Could not check for updates right now.')
+      }
+    } finally {
+      setCheckingUpdate(false)
     }
   }
 
@@ -814,6 +850,88 @@ export function SettingsView({
               Psalm 118:24 (KJV)
             </strong>
           </p>
+        </div>
+
+        {/* Updates & Website Sync Card */}
+        <div className="settings-card">
+          <div className="settings-card-header">
+            <span className="settings-card-title">Updates &amp; Releases</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+              Installed build: <strong style={{ color: 'var(--text-primary)' }}>v{appVersion}</strong>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn-secondary-pill"
+                onClick={handleCheckForUpdates}
+                disabled={checkingUpdate}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5 }}
+              >
+                <RefreshCw size={12} className={checkingUpdate ? 'spin-icon' : ''} />
+                {checkingUpdate ? 'Checking...' : 'Check for Updates'}
+              </button>
+
+              <button
+                type="button"
+                className="btn-secondary-pill"
+                onClick={() => window.hello11824?.openExternal?.(`${APP_CONFIG.websiteUrl}/#download`)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5 }}
+              >
+                <ExternalLink size={12} /> Download Page
+              </button>
+            </div>
+
+            {updateInfo && (
+              <div
+                style={{
+                  background: 'var(--bg-card-inner)',
+                  border: `1px solid ${updateInfo.hasUpdate ? 'var(--accent-purple)' : 'var(--border-subtle)'}`,
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '10px 12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                  fontSize: 11.5
+                }}
+              >
+                {updateInfo.ok ? (
+                  updateInfo.hasUpdate ? (
+                    <>
+                      <div style={{ fontWeight: 600, color: 'var(--accent-purple)' }}>
+                        New update available: {updateInfo.latestTag}
+                      </div>
+                      {updateInfo.releaseNotes && (
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'pre-line', maxHeight: 90, overflowY: 'auto' }}>
+                          {updateInfo.releaseNotes}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        className="btn-primary-pill"
+                        onClick={() => window.hello11824?.openExternal?.(updateInfo.downloadUrl)}
+                        style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, marginTop: 2 }}
+                      >
+                        <Download size={12} /> Get {updateInfo.latestTag}
+                      </button>
+                    </>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-cyan)' }}>
+                      <CheckCircle2 size={13} />
+                      <span>You are running the latest release (v{updateInfo.currentVersion}).</span>
+                    </div>
+                  )
+                ) : (
+                  <div style={{ color: 'var(--priority-high-text)' }}>
+                    {updateInfo.error || 'Unable to check for updates right now.'}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

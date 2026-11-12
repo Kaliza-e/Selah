@@ -1,12 +1,6 @@
 name: Cross-Platform Build & Verification
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '**.md'
-      - '.gitignore'
   pull_request:
     branches:
       - main

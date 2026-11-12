@@ -324,6 +324,19 @@ export interface HelloAPI {
 
   // Application Info
   getAppVersion(): Promise<string>
+  checkForUpdates(): Promise<{
+    ok: boolean
+    currentVersion: string
+    latestVersion: string
+    latestTag: string
+    hasUpdate: boolean
+    releaseName?: string
+    publishedAt?: string | null
+    releaseNotes?: string
+    downloadUrl: string
+    releaseUrl?: string
+    error?: string
+  }>
 }
 
 declare global {

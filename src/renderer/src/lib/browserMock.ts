@@ -791,6 +791,20 @@ export function createBrowserMockApi(): HelloAPI {
     // Application Info
     async getAppVersion() {
       return APP_CONFIG.version
+    },
+    async checkForUpdates() {
+      return {
+        ok: true,
+        currentVersion: APP_CONFIG.version,
+        latestVersion: APP_CONFIG.version,
+        latestTag: `v${APP_CONFIG.version}`,
+        hasUpdate: false,
+        releaseName: `Selah ${APP_CONFIG.version}`,
+        publishedAt: null,
+        releaseNotes: '',
+        downloadUrl: `${APP_CONFIG.websiteUrl}/#download`,
+        releaseUrl: `${APP_CONFIG.repoUrl}/releases`
+      }
     }
   }
 }

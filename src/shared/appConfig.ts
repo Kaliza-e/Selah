@@ -9,6 +9,8 @@ export const APP_CONFIG = {
   shortcutName: 'Selah.lnk',
   windowTitle: 'Selah',
   author: 'Kaliza Esther <kalizaesther5@gmail.com>',
-  repoUrl: 'https://github.com/Kaliza-e/Hello_118_24'
+  repoUrl: 'https://github.com/Kaliza-e/Selah',
+  websiteUrl: 'https://selah-release.vercel.app',
+  releaseManifestUrl: 'https://raw.githubusercontent.com/Kaliza-e/Selah/main/release-manifest.json'
 } as const
 

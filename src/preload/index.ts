@@ -189,7 +189,8 @@ const api = {
   getUserStreakAndBadges: () => ipcRenderer.invoke('analytics:get-streaks-and-badges'),
 
   // Application Info
-  getAppVersion: () => ipcRenderer.invoke('app:get-version')
+  getAppVersion: () => ipcRenderer.invoke('app:get-version'),
+  checkForUpdates: () => ipcRenderer.invoke('app:check-updates')
 }
 
 contextBridge.exposeInMainWorld('hello11824', api)

@@ -365,6 +365,7 @@ const SAFE_EXTERNAL_HOSTS = new Set([
   'github.com',
   'raw.githubusercontent.com',
   'api.github.com',
+  'selah-release.vercel.app',
   'fonts.googleapis.com',
   'fonts.gstatic.com'
 ])
@@ -843,6 +844,83 @@ app.on('will-quit', () => {
 ipcMain.handle('app:get-version', (event) => {
   assertAuthorizedSender(event)
   return app.getVersion()
+})
+
+function compareSemverStrings(a: string, b: string): number {
+  const pa = a.replace(/^v/i, '').split(/[-+]/)[0].split('.').map(n => parseInt(n, 10) || 0)
+  const pb = b.replace(/^v/i, '').split(/[-+]/)[0].split('.').map(n => parseInt(n, 10) || 0)
+  const len = Math.max(pa.length, pb.length, 3)
+  for (let i = 0; i < len; i++) {
+    const diff = (pa[i] ?? 0) - (pb[i] ?? 0)
+    if (diff !== 0) return diff
+  }
+  return 0
+}
+
+ipcMain.handle('app:check-updates', async (event) => {
+  assertAuthorizedSender(event)
+  const currentVersion = app.getVersion()
+  try {
+    let rawRelease: {
+      tag_name?: string
+      name?: string
+      published_at?: string
+      body?: string
+      html_url?: string
+    } | null = null
+
+    try {
+      const res = await fetch('https://api.github.com/repos/Kaliza-e/Selah/releases/latest', {
+        headers: {
+          Accept: 'application/vnd.github+json',
+          'User-Agent': `Selah/${currentVersion}`
+        }
+      })
+      if (res.ok) {
+        rawRelease = await res.json()
+      }
+    } catch {
+      // Fall back to release-manifest.json on raw.githubusercontent.com
+    }
+
+    if (!rawRelease) {
+      const manifestRes = await fetch(APP_CONFIG.releaseManifestUrl, {
+        headers: { 'User-Agent': `Selah/${currentVersion}` }
+      })
+      if (!manifestRes.ok) {
+        throw new Error(`Update check returned HTTP ${manifestRes.status}`)
+      }
+      rawRelease = await manifestRes.json()
+    }
+
+    const latestTag = (rawRelease?.tag_name || `v${currentVersion}`).trim()
+    const latestVersion = latestTag.replace(/^v/i, '')
+    const hasUpdate = compareSemverStrings(latestVersion, currentVersion) > 0
+
+    return {
+      ok: true,
+      currentVersion,
+      latestVersion,
+      latestTag,
+      hasUpdate,
+      releaseName: rawRelease?.name || `Selah ${latestVersion}`,
+      publishedAt: rawRelease?.published_at || null,
+      releaseNotes: (rawRelease?.body || '').trim().slice(0, 600),
+      downloadUrl: `${APP_CONFIG.websiteUrl}/#download`,
+      releaseUrl: rawRelease?.html_url || `${APP_CONFIG.repoUrl}/releases`
+    }
+  } catch (err) {
+    return {
+      ok: false,
+      currentVersion,
+      latestVersion: currentVersion,
+      latestTag: `v${currentVersion}`,
+      hasUpdate: false,
+      error: err instanceof Error ? err.message : 'Unable to reach update server',
+      downloadUrl: `${APP_CONFIG.websiteUrl}/#download`,
+      releaseUrl: `${APP_CONFIG.repoUrl}/releases`
+    }
+  }
 })
 
 const MAX_DOC_SIZE_BYTES = 25 * 1024 * 1024 // 25 MB max for PDF / Word documents
