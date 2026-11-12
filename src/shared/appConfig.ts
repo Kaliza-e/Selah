@@ -2,7 +2,7 @@ export const APP_CONFIG = {
   name: 'Selah',
   appId: 'com.selah.desktop',
   description: 'Selah — Focused desktop planner, calendar, and companion',
-  version: '0.3.2',
+  version: '0.3.3',
   databaseName: 'selah.sqlite',
   userDataDir: 'selah',
   userDataDevDir: 'selah-dev',
