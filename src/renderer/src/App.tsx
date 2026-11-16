@@ -6,7 +6,8 @@ import {
   Settings as SettingsIcon,
   Home,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  Sparkles
 } from 'lucide-react'
 import { Task, ClassItem, ActiveTab, ActiveTimer, toDateKey } from './types'
 import { APP_CONFIG } from '../../shared/appConfig'
@@ -17,6 +18,7 @@ import { SchedulesView } from './components/SchedulesView'
 import { TasksView } from './components/TasksView'
 import { TomorrowPlanner } from './components/TomorrowPlanner'
 import { WeeklyOverview } from './components/WeeklyOverview'
+import { SelahMomentsView } from './components/moments/SelahMomentsView'
 import { SettingsView } from './components/SettingsView'
 import { TaskModal } from './components/TaskModal'
 import { SubjectModal } from './components/SubjectModal'
@@ -500,6 +502,16 @@ export default function App() {
 
               <button
                 type="button"
+                className={`sidebar-nav-item ${activeTab === 'moments' ? 'active' : ''}`}
+                onClick={() => setActiveTab('moments')}
+                title="Selah Moments - Space to Pause"
+                aria-label="Selah Moments"
+              >
+                <Sparkles size={16} /> <span className="sidebar-nav-label">Moments</span>
+              </button>
+
+              <button
+                type="button"
                 className={`sidebar-nav-item ${activeTab === 'settings' ? 'active' : ''}`}
                 onClick={() => setActiveTab('settings')}
                 title="Settings"
@@ -636,6 +648,13 @@ export default function App() {
                 onOpenTaskModal={() => setShowGlobalTaskModal(true)}
                 onOpenFocusTimer={task => setFocusTask(task)}
                 onScheduleTask={task => setSchedulingTask(task)}
+              />
+            )}
+
+            {activeTab === 'moments' && (
+              <SelahMomentsView
+                onNavigateHome={() => setActiveTab('today')}
+                onShowMessage={showToast}
               />
             )}
 

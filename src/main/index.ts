@@ -51,7 +51,21 @@ import {
   getJournalEntry,
   saveJournalEntry,
   getWeeklyReflectionReport,
-  getUserStreakAndBadges
+  getUserStreakAndBadges,
+  listMomentsMessages,
+  toggleMomentsMessageFavorite,
+  getRandomMomentsMessage,
+  getDailyMomentsMessage,
+  listMomentsPrompts,
+  getWeeklyMomentsPrompt,
+  listMomentsReflections,
+  saveMomentsReflection,
+  deleteMomentsReflection,
+  listMomentsReminders,
+  saveMomentsReminder,
+  deleteMomentsReminder,
+  toggleMomentsReminderPinned,
+  toggleMomentsReminderFavorite
 } from './db'
 import { parseTimetableText } from './importers/parser'
 import { ingestScheduleDocument, parseScheduleText, performNodeOcr } from './importers/schedulePipeline'
@@ -1153,6 +1167,105 @@ ipcMain.handle('analytics:get-reflection-report', (event, startDate: string, end
 ipcMain.handle('analytics:get-streaks-and-badges', (event) => {
   assertAuthorizedSender(event)
   return getUserStreakAndBadges()
+})
+
+// ----------------- Selah Moments IPC Handlers -----------------
+
+ipcMain.handle('moments:list-messages', (event, category?: string, onlyFavorites?: boolean) => {
+  assertAuthorizedSender(event)
+  return listMomentsMessages(category ? String(category) : undefined, Boolean(onlyFavorites))
+})
+
+ipcMain.handle('moments:toggle-favorite-message', (event, id: number) => {
+  assertAuthorizedSender(event)
+  return toggleMomentsMessageFavorite(Number(id))
+})
+
+ipcMain.handle('moments:get-daily-message', (event) => {
+  assertAuthorizedSender(event)
+  return getDailyMomentsMessage()
+})
+
+ipcMain.handle('moments:get-random-message', (event, category?: string) => {
+  assertAuthorizedSender(event)
+  return getRandomMomentsMessage(category ? String(category) : undefined)
+})
+
+ipcMain.handle('moments:list-prompts', (event, category?: string) => {
+  assertAuthorizedSender(event)
+  return listMomentsPrompts(category ? String(category) : undefined)
+})
+
+ipcMain.handle('moments:get-weekly-prompt', (event, weekKey?: string, dayOfWeek?: number) => {
+  assertAuthorizedSender(event)
+  return getWeeklyMomentsPrompt(
+    weekKey ? String(weekKey) : undefined,
+    typeof dayOfWeek === 'number' ? dayOfWeek : undefined
+  )
+})
+
+ipcMain.handle('moments:list-reflections', (event, weekKey?: string) => {
+  assertAuthorizedSender(event)
+  return listMomentsReflections(weekKey ? String(weekKey) : undefined)
+})
+
+ipcMain.handle('moments:save-reflection', (event, payload: any) => {
+  assertAuthorizedSender(event)
+  if (!payload || !payload.responseText || !payload.promptQuestion) {
+    throw new Error('Reflection text and prompt question are required.')
+  }
+  return saveMomentsReflection({
+    id: payload.id ? Number(payload.id) : undefined,
+    weekKey: String(payload.weekKey),
+    dateKey: String(payload.dateKey),
+    promptId: payload.promptId ? Number(payload.promptId) : null,
+    promptQuestion: String(payload.promptQuestion).slice(0, 500),
+    category: String(payload.category || 'General').slice(0, 100),
+    responseText: String(payload.responseText).slice(0, 10000)
+  })
+})
+
+ipcMain.handle('moments:delete-reflection', (event, id: number) => {
+  assertAuthorizedSender(event)
+  return deleteMomentsReflection(Number(id))
+})
+
+ipcMain.handle('moments:list-reminders', (event, category?: string, search?: string) => {
+  assertAuthorizedSender(event)
+  return listMomentsReminders(
+    category ? String(category) : undefined,
+    search ? String(search) : undefined
+  )
+})
+
+ipcMain.handle('moments:save-reminder', (event, payload: any) => {
+  assertAuthorizedSender(event)
+  if (!payload || !payload.title || !payload.content) {
+    throw new Error('Title and content are required for a reminder.')
+  }
+  return saveMomentsReminder({
+    id: payload.id ? Number(payload.id) : undefined,
+    title: String(payload.title).slice(0, 240),
+    content: String(payload.content).slice(0, 5000),
+    category: payload.category ? String(payload.category).slice(0, 100) : 'General',
+    isPinned: payload.isPinned !== undefined ? Boolean(payload.isPinned) : undefined,
+    isFavorite: payload.isFavorite !== undefined ? Boolean(payload.isFavorite) : undefined
+  })
+})
+
+ipcMain.handle('moments:delete-reminder', (event, id: number) => {
+  assertAuthorizedSender(event)
+  return deleteMomentsReminder(Number(id))
+})
+
+ipcMain.handle('moments:toggle-reminder-pinned', (event, id: number) => {
+  assertAuthorizedSender(event)
+  return toggleMomentsReminderPinned(Number(id))
+})
+
+ipcMain.handle('moments:toggle-reminder-favorite', (event, id: number) => {
+  assertAuthorizedSender(event)
+  return toggleMomentsReminderFavorite(Number(id))
 })
 
 // Smart Free Time Task Suggestions

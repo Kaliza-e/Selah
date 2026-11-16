@@ -15,6 +15,7 @@ import { Task, ClassItem, ScheduleEvent, ActiveTab, toDateKey } from '../types'
 import { FreeTimeBanner } from './FreeTimeBanner'
 import { FaithJournalCard } from './FaithJournalCard'
 import { ExamCountdownCard } from './ExamCountdownCard'
+import { SelahMomentsWidget } from './moments/SelahMomentsWidget'
 import { formatTaskDate, isTaskOverdue } from '../lib/dateUtils'
 import { formatDurationDisplay } from '../lib/durationUtils'
 
@@ -168,6 +169,13 @@ export function TodayView({
           <div className="compact-time-display">{currentTimeString}</div>
           <div className="compact-date-sublabel">{formattedDate}</div>
         </div>
+
+        {/* Selah Moments: A Little Reminder */}
+        <SelahMomentsWidget
+          isCompact={true}
+          onOpenMoments={() => onNavigate('moments')}
+          onShowMessage={onShowMessage}
+        />
 
         {/* Smart Free-Time Suggestion Banner */}
         <FreeTimeBanner
@@ -349,6 +357,13 @@ export function TodayView({
           </button>
         </div>
       </div>
+
+      {/* Selah Moments: A Little Reminder */}
+      <SelahMomentsWidget
+        isCompact={false}
+        onOpenMoments={() => onNavigate('moments')}
+        onShowMessage={onShowMessage}
+      />
 
       {/* Faith & Encouragement Daily Scripture & Private Journal */}
       <FaithJournalCard today={today} onShowMessage={onShowMessage || (() => {})} />

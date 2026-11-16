@@ -788,6 +788,172 @@ export function createBrowserMockApi(): HelloAPI {
       }
     },
 
+    // Selah Moments
+    async listMomentsMessages(category?: string, onlyFavorites?: boolean) {
+      const messages: any[] = [
+        { id: 1, category: 'Self-worth and confidence', message: 'Your worth is not determined by how much you accomplish.', source_type: 'original', scripture_ref: null, is_favorite: 0, created_at: new Date().toISOString() },
+        { id: 2, category: 'Self-worth and confidence', message: "You don't have to have everything figured out to be making progress.", source_type: 'original', scripture_ref: null, is_favorite: 1, created_at: new Date().toISOString() },
+        { id: 3, category: 'Faith and spirituality', message: 'Be still, and know that I am God.', source_type: 'scripture', scripture_ref: 'Psalm 46:10', is_favorite: 1, created_at: new Date().toISOString() },
+        { id: 4, category: 'Patience and personal growth', message: 'You are allowed to grow at your own pace.', source_type: 'original', scripture_ref: null, is_favorite: 0, created_at: new Date().toISOString() },
+        { id: 5, category: 'Rest and self-compassion', message: 'Rest is not a reward for exhaustion. It is part of being human.', source_type: 'original', scripture_ref: null, is_favorite: 0, created_at: new Date().toISOString() },
+        { id: 6, category: 'Gratitude and appreciation', message: 'This is the day which the LORD hath made; we will rejoice and be glad in it.', source_type: 'scripture', scripture_ref: 'Psalm 118:24', is_favorite: 1, created_at: new Date().toISOString() },
+        { id: 7, category: 'Hope and new beginnings', message: 'Sometimes, beginning again is an act of courage.', source_type: 'original', scripture_ref: null, is_favorite: 0, created_at: new Date().toISOString() }
+      ]
+      return messages.filter(m => (!category || category === 'All' || m.category === category) && (!onlyFavorites || m.is_favorite === 1))
+    },
+
+    async toggleMomentsMessageFavorite(id: number) {
+      return true
+    },
+
+    async getDailyMomentsMessage() {
+      return {
+        id: 2,
+        category: 'Self-worth and confidence',
+        message: "You don't have to have everything figured out to be making progress.",
+        source_type: 'original',
+        scripture_ref: null,
+        is_favorite: 1,
+        created_at: new Date().toISOString()
+      } as any
+    },
+
+    async getRandomMomentsMessage() {
+      return {
+        id: 1,
+        category: 'Self-worth and confidence',
+        message: 'Your worth is not determined by how much you accomplish.',
+        source_type: 'original',
+        scripture_ref: null,
+        is_favorite: 0,
+        created_at: new Date().toISOString()
+      } as any
+    },
+
+    async listMomentsPrompts(category?: string) {
+      const prompts = [
+        { id: 1, category: 'Personal growth', question: 'What did you learn about yourself this week?', day_hint: 'monday', theme: 'A New Beginning' },
+        { id: 2, category: 'Emotional well-being', question: 'How have you really been feeling lately? What has been weighing on your mind?', day_hint: 'wednesday', theme: 'Pause and Reflect' },
+        { id: 3, category: 'Gratitude', question: 'What made you genuinely happy this week, and what small win are you celebrating?', day_hint: 'friday', theme: 'Gratitude and Wins' },
+        { id: 4, category: 'Faith', question: 'Where did you see God working in your life this week, and what can you surrender in prayer?', day_hint: 'sunday', theme: 'A Moment with Yourself' },
+        { id: 5, category: 'Future and purpose', question: 'What is one thing you accomplished recently that you haven’t given yourself enough credit for?', day_hint: 'any', theme: 'Giving Yourself Credit' }
+      ]
+      return prompts.filter(p => !category || category === 'All' || p.category === category) as any
+    },
+
+    async getWeeklyMomentsPrompt() {
+      return {
+        id: 5,
+        category: 'Future and purpose',
+        question: 'What is one thing you accomplished recently that you haven’t given yourself enough credit for?',
+        day_hint: 'any',
+        theme: 'Giving Yourself Credit'
+      } as any
+    },
+
+    async listMomentsReflections(weekKey?: string) {
+      const all = loadFromStorage<any[]>('selah_moments_reflections', [])
+      if (weekKey) return all.filter(r => r.week_key === weekKey)
+      return all
+    },
+
+    async saveMomentsReflection(payload: any) {
+      const all = loadFromStorage<any[]>('selah_moments_reflections', [])
+      const now = new Date().toISOString()
+      if (payload.id) {
+        const idx = all.findIndex(r => r.id === payload.id)
+        if (idx !== -1) {
+          all[idx] = { ...all[idx], ...payload, updated_at: now }
+          saveToStorage('selah_moments_reflections', all)
+          return all[idx]
+        }
+      }
+      const newRefl = {
+        id: Date.now(),
+        week_key: payload.weekKey,
+        date_key: payload.dateKey,
+        prompt_id: payload.promptId || null,
+        prompt_question: payload.promptQuestion,
+        category: payload.category || 'General',
+        response_text: payload.responseText,
+        created_at: now,
+        updated_at: now
+      }
+      all.unshift(newRefl)
+      saveToStorage('selah_moments_reflections', all)
+      return newRefl
+    },
+
+    async deleteMomentsReflection(id: number) {
+      const all = loadFromStorage<any[]>('selah_moments_reflections', [])
+      saveToStorage('selah_moments_reflections', all.filter(r => r.id !== id))
+      return true
+    },
+
+    async listMomentsReminders(category?: string, search?: string) {
+      let all = loadFromStorage<any[]>('selah_moments_reminders', [])
+      if (category && category !== 'All') all = all.filter(r => r.category === category)
+      if (search && search.trim()) {
+        const s = search.toLowerCase()
+        all = all.filter(r => (r.title && r.title.toLowerCase().includes(s)) || (r.content && r.content.toLowerCase().includes(s)))
+      }
+      return all.sort((a, b) => (b.is_pinned || 0) - (a.is_pinned || 0))
+    },
+
+    async saveMomentsReminder(payload: any) {
+      const all = loadFromStorage<any[]>('selah_moments_reminders', [])
+      const now = new Date().toISOString()
+      if (payload.id) {
+        const idx = all.findIndex(r => r.id === payload.id)
+        if (idx !== -1) {
+          all[idx] = { ...all[idx], ...payload, updated_at: now }
+          saveToStorage('selah_moments_reminders', all)
+          return all[idx]
+        }
+      }
+      const newRem = {
+        id: Date.now(),
+        title: payload.title,
+        content: payload.content,
+        category: payload.category || 'General',
+        is_pinned: payload.isPinned ? 1 : 0,
+        is_favorite: payload.isFavorite ? 1 : 0,
+        created_at: now,
+        updated_at: now
+      }
+      all.unshift(newRem)
+      saveToStorage('selah_moments_reminders', all)
+      return newRem
+    },
+
+    async deleteMomentsReminder(id: number) {
+      const all = loadFromStorage<any[]>('selah_moments_reminders', [])
+      saveToStorage('selah_moments_reminders', all.filter(r => r.id !== id))
+      return true
+    },
+
+    async toggleMomentsReminderPinned(id: number) {
+      const all = loadFromStorage<any[]>('selah_moments_reminders', [])
+      const item = all.find(r => r.id === id)
+      if (item) {
+        item.is_pinned = item.is_pinned ? 0 : 1
+        saveToStorage('selah_moments_reminders', all)
+        return Boolean(item.is_pinned)
+      }
+      return false
+    },
+
+    async toggleMomentsReminderFavorite(id: number) {
+      const all = loadFromStorage<any[]>('selah_moments_reminders', [])
+      const item = all.find(r => r.id === id)
+      if (item) {
+        item.is_favorite = item.is_favorite ? 0 : 1
+        saveToStorage('selah_moments_reminders', all)
+        return Boolean(item.is_favorite)
+      }
+      return false
+    },
+
     // Application Info
     async getAppVersion() {
       return APP_CONFIG.version

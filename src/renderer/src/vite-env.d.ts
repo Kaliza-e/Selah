@@ -322,6 +322,37 @@ export interface HelloAPI {
   getWeeklyReflectionReport(startDate: string, endDate: string): Promise<import('./types').WeeklyReflectionReport>
   getUserStreakAndBadges(): Promise<import('./types').UserStreakAndBadges>
 
+  // Selah Moments
+  listMomentsMessages(category?: string, onlyFavorites?: boolean): Promise<import('./types').SelahMessage[]>
+  toggleMomentsMessageFavorite(id: number): Promise<boolean>
+  getDailyMomentsMessage(): Promise<import('./types').SelahMessage | null>
+  getRandomMomentsMessage(category?: string): Promise<import('./types').SelahMessage | null>
+  listMomentsPrompts(category?: string): Promise<import('./types').SelahPrompt[]>
+  getWeeklyMomentsPrompt(weekKey?: string, dayOfWeek?: number): Promise<import('./types').SelahPrompt | null>
+  listMomentsReflections(weekKey?: string): Promise<import('./types').SelahReflection[]>
+  saveMomentsReflection(payload: {
+    id?: number
+    weekKey: string
+    dateKey: string
+    promptId?: number | null
+    promptQuestion: string
+    category: string
+    responseText: string
+  }): Promise<import('./types').SelahReflection>
+  deleteMomentsReflection(id: number): Promise<boolean>
+  listMomentsReminders(category?: string, search?: string): Promise<import('./types').SelahReminder[]>
+  saveMomentsReminder(payload: {
+    id?: number
+    title: string
+    content: string
+    category?: string
+    isPinned?: boolean
+    isFavorite?: boolean
+  }): Promise<import('./types').SelahReminder>
+  deleteMomentsReminder(id: number): Promise<boolean>
+  toggleMomentsReminderPinned(id: number): Promise<boolean>
+  toggleMomentsReminderFavorite(id: number): Promise<boolean>
+
   // Application Info
   getAppVersion(): Promise<string>
   checkForUpdates(): Promise<{

@@ -140,6 +140,47 @@ export interface EventReminderRecord {
   created_at: string
 }
 
+export interface SelahMessageRecord {
+  id: number
+  category: string
+  message: string
+  source_type: 'original' | 'scripture'
+  scripture_ref: string | null
+  is_favorite: number
+  created_at: string
+}
+
+export interface SelahPromptRecord {
+  id: number
+  category: string
+  question: string
+  day_hint: string | null
+  theme: string | null
+}
+
+export interface SelahReflectionRecord {
+  id: number
+  week_key: string
+  date_key: string
+  prompt_id: number | null
+  prompt_question: string
+  category: string
+  response_text: string
+  created_at: string
+  updated_at: string
+}
+
+export interface SelahReminderRecord {
+  id: number
+  title: string
+  content: string
+  category: string
+  is_pinned: number
+  is_favorite: number
+  created_at: string
+  updated_at: string
+}
+
 let db: Database.Database
 
 // Creates an automated snapshot backup of the current database into userData/backups/
@@ -498,6 +539,171 @@ export function initDatabase(): Database.Database {
       db.exec(`INSERT OR REPLACE INTO schema_version (version) VALUES (7);`)
     } catch (err) {
       console.error('Error running migration v7:', err)
+    }
+  }
+
+  if (currentVersion < 8) {
+    try {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS selah_moments_messages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          category TEXT NOT NULL,
+          message TEXT NOT NULL,
+          source_type TEXT NOT NULL DEFAULT 'original',
+          scripture_ref TEXT,
+          is_favorite INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS selah_moments_prompts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          category TEXT NOT NULL,
+          question TEXT NOT NULL,
+          day_hint TEXT,
+          theme TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS selah_moments_reflections (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          week_key TEXT NOT NULL,
+          date_key TEXT NOT NULL,
+          prompt_id INTEGER,
+          prompt_question TEXT NOT NULL,
+          category TEXT NOT NULL,
+          response_text TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS selah_moments_reminders (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          category TEXT NOT NULL DEFAULT 'General',
+          is_pinned INTEGER NOT NULL DEFAULT 0,
+          is_favorite INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_moments_reflections_week ON selah_moments_reflections(week_key);
+        CREATE INDEX IF NOT EXISTS idx_moments_reflections_date ON selah_moments_reflections(date_key);
+        CREATE INDEX IF NOT EXISTS idx_moments_messages_category ON selah_moments_messages(category);
+        CREATE INDEX IF NOT EXISTS idx_moments_reminders_pinned ON selah_moments_reminders(is_pinned, updated_at);
+      `)
+
+      // Seed encouraging messages if empty
+      const msgCount = (db.prepare('SELECT count(*) as count FROM selah_moments_messages').get() as { count: number }).count
+      if (msgCount === 0) {
+        const seedMessages = [
+          // Self-worth and confidence
+          { cat: 'Self-worth and confidence', msg: 'Your worth is not determined by how much you accomplish.', type: 'original', ref: null },
+          { cat: 'Self-worth and confidence', msg: 'You are more than your achievements.', type: 'original', ref: null },
+          { cat: 'Self-worth and confidence', msg: "You don't have to have everything figured out to be making progress.", type: 'original', ref: null },
+          { cat: 'Self-worth and confidence', msg: 'Your worth is not measured by your productivity.', type: 'original', ref: null },
+          { cat: 'Self-worth and confidence', msg: 'I praise you because I am fearfully and wonderfully made; your works are wonderful, I know that full well.', type: 'scripture', ref: 'Psalm 139:14' },
+          { cat: 'Self-worth and confidence', msg: 'For we are God’s handiwork, created in Christ Jesus to do good works, which God prepared in advance for us to do.', type: 'scripture', ref: 'Ephesians 2:10' },
+
+          // Faith and spirituality
+          { cat: 'Faith and spirituality', msg: 'Surrender the outcome and focus on being faithful in this moment.', type: 'original', ref: null },
+          { cat: 'Faith and spirituality', msg: 'When your steps feel small, remember God works through steady faithfulness.', type: 'original', ref: null },
+          { cat: 'Faith and spirituality', msg: 'Be still, and know that I am God: I will be exalted among the heathen, I will be exalted in the earth.', type: 'scripture', ref: 'Psalm 46:10' },
+          { cat: 'Faith and spirituality', msg: 'Trust in the LORD with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.', type: 'scripture', ref: 'Proverbs 3:5-6' },
+          { cat: 'Faith and spirituality', msg: 'The LORD is my shepherd; I shall not want. He maketh me to lie down in green pastures: he leadeth me beside the still waters.', type: 'scripture', ref: 'Psalm 23:1-2' },
+
+          // Patience and personal growth
+          { cat: 'Patience and personal growth', msg: 'You are allowed to grow at your own pace.', type: 'original', ref: null },
+          { cat: 'Patience and personal growth', msg: 'Progress does not always have to be visible.', type: 'original', ref: null },
+          { cat: 'Patience and personal growth', msg: 'Give yourself the same patience you give other people.', type: 'original', ref: null },
+          { cat: 'Patience and personal growth', msg: "You don't need to have everything figured out to take the next step.", type: 'original', ref: null },
+          { cat: 'Patience and personal growth', msg: 'To every thing there is a season, and a time to every purpose under the heaven.', type: 'scripture', ref: 'Ecclesiastes 3:1' },
+          { cat: 'Patience and personal growth', msg: 'Let perseverance finish its work so that you may be mature and complete, not lacking anything.', type: 'scripture', ref: 'James 1:4' },
+
+          // Resilience and overcoming difficulties
+          { cat: 'Resilience and overcoming difficulties', msg: 'Sometimes, beginning again is an act of courage.', type: 'original', ref: null },
+          { cat: 'Resilience and overcoming difficulties', msg: 'You have survived difficult days before, and you carry wisdom from every single one of them.', type: 'original', ref: null },
+          { cat: 'Resilience and overcoming difficulties', msg: 'Strength is not about never feeling tired; it is continuing with a gentle heart.', type: 'original', ref: null },
+          { cat: 'Resilience and overcoming difficulties', msg: 'My grace is sufficient for thee: for my strength is made perfect in weakness.', type: 'scripture', ref: '2 Corinthians 12:9' },
+          { cat: 'Resilience and overcoming difficulties', msg: 'We are troubled on every side, yet not distressed; we are perplexed, but not in despair.', type: 'scripture', ref: '2 Corinthians 4:8' },
+
+          // Rest and self-compassion
+          { cat: 'Rest and self-compassion', msg: 'Rest is not a reward for exhaustion. It is part of being human.', type: 'original', ref: null },
+          { cat: 'Rest and self-compassion', msg: 'You can be ambitious and still choose peace.', type: 'original', ref: null },
+          { cat: 'Rest and self-compassion', msg: 'Taking a pause is not quitting; it is making space to breathe and realign.', type: 'original', ref: null },
+          { cat: 'Rest and self-compassion', msg: 'Come unto me, all ye that labour and are heavy laden, and I will give you rest.', type: 'scripture', ref: 'Matthew 11:28' },
+          { cat: 'Rest and self-compassion', msg: 'In returning and rest shall ye be saved; in quietness and in confidence shall be your strength.', type: 'scripture', ref: 'Isaiah 30:15' },
+
+          // Discipline and consistency
+          { cat: 'Discipline and consistency', msg: 'Small, quiet daily efforts compound into extraordinary transformations.', type: 'original', ref: null },
+          { cat: 'Discipline and consistency', msg: 'Discipline is simply remembering what you truly want when the moment gets noisy.', type: 'original', ref: null },
+          { cat: 'Discipline and consistency', msg: 'Commit your work to the LORD, and your plans will be established.', type: 'scripture', ref: 'Proverbs 16:3' },
+          { cat: 'Discipline and consistency', msg: 'Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up.', type: 'scripture', ref: 'Galatians 6:9' },
+
+          // Gratitude and appreciation
+          { cat: 'Gratitude and appreciation', msg: 'Do not become so focused on your future that you forget to enjoy your present.', type: 'original', ref: null },
+          { cat: 'Gratitude and appreciation', msg: 'Look around you today: there is something ordinary that is actually a gift.', type: 'original', ref: null },
+          { cat: 'Gratitude and appreciation', msg: 'This is the day which the LORD hath made; we will rejoice and be glad in it.', type: 'scripture', ref: 'Psalm 118:24' },
+          { cat: 'Gratitude and appreciation', msg: 'Give thanks in all circumstances; for this is God’s will for you in Christ Jesus.', type: 'scripture', ref: '1 Thessalonians 5:18' },
+
+          // Hope and new beginnings
+          { cat: 'Hope and new beginnings', msg: 'Every morning is a clean canvas. What happened yesterday does not have to dictate today.', type: 'original', ref: null },
+          { cat: 'Hope and new beginnings', msg: 'Hope is believing that tomorrow holds goodness, even when today is unclear.', type: 'original', ref: null },
+          { cat: 'Hope and new beginnings', msg: 'The steadfast love of the LORD never ceases; his mercies never come to an end; they are new every morning: great is thy faithfulness.', type: 'scripture', ref: 'Lamentations 3:22-23' },
+          { cat: 'Hope and new beginnings', msg: 'For I know the plans I have for you, declares the LORD, plans to prosper you and not to harm you, plans to give you hope and a future.', type: 'scripture', ref: 'Jeremiah 29:11' },
+
+          // Relationships and kindness
+          { cat: 'Relationships and kindness', msg: 'A quiet word of appreciation can lighten someone’s entire week.', type: 'original', ref: null },
+          { cat: 'Relationships and kindness', msg: 'You do not have to carry everything alone. Let those who care for you share the weight.', type: 'original', ref: null },
+          { cat: 'Relationships and kindness', msg: 'Be kind and compassionate to one another, forgiving each other, just as in Christ God forgave you.', type: 'scripture', ref: 'Ephesians 4:32' },
+          { cat: 'Relationships and kindness', msg: 'As iron sharpens iron, so one person sharpens another.', type: 'scripture', ref: 'Proverbs 27:17' }
+        ]
+
+        const insertMsg = db.prepare(`
+          INSERT INTO selah_moments_messages (category, message, source_type, scripture_ref)
+          VALUES (?, ?, ?, ?)
+        `)
+        for (const m of seedMessages) {
+          insertMsg.run(m.cat, m.msg, m.type, m.ref)
+        }
+      }
+
+      // Seed prompts if empty
+      const promptCount = (db.prepare('SELECT count(*) as count FROM selah_moments_prompts').get() as { count: number }).count
+      if (promptCount === 0) {
+        const seedPrompts = [
+          // Weekly rhythm prompts
+          { cat: 'Personal growth', q: 'What did you learn about yourself this week?', day: 'monday', theme: 'A New Beginning' },
+          { cat: 'Future and purpose', q: 'What intention or attitude would you like to anchor this week in?', day: 'monday', theme: 'Fresh Focus' },
+          { cat: 'Emotional well-being', q: 'How have you really been feeling lately? What has been weighing on your mind?', day: 'wednesday', theme: 'Pause and Reflect' },
+          { cat: 'Personal growth', q: 'What is something you handled better this week than you would have in the past?', day: 'wednesday', theme: 'Midweek Check-in' },
+          { cat: 'Gratitude', q: 'What made you genuinely happy this week, and what small win are you celebrating?', day: 'friday', theme: 'Gratitude and Wins' },
+          { cat: 'Relationships', q: 'Who made your week better, and have you let them know?', day: 'friday', theme: 'Appreciation' },
+          { cat: 'Faith', q: 'Where did you see God working in your life this week, and what can you surrender in prayer?', day: 'sunday', theme: 'A Moment with Yourself' },
+          { cat: 'Emotional well-being', q: 'What do you need to forgive yourself for, and what do you need more of in your life?', day: 'sunday', theme: 'Restoration' },
+
+          // Additional reflective prompts
+          { cat: 'Personal growth', q: 'What challenged you, and what did it teach you?', day: 'any', theme: 'Growth Through Trials' },
+          { cat: 'Gratitude', q: 'What is something small you are genuinely grateful for right now?', day: 'any', theme: 'Quiet Gratitude' },
+          { cat: 'Emotional well-being', q: 'What thought or obligation can you gently set down today?', day: 'any', theme: 'Lightening the Load' },
+          { cat: 'Faith', q: 'What Scripture or promise has brought comfort to your heart recently?', day: 'any', theme: 'Spiritual Strength' },
+          { cat: 'Relationships', q: 'Did you make enough time for the people you care about, and how did you show kindness?', day: 'any', theme: 'Heart for Others' },
+          { cat: 'Future and purpose', q: 'What is one thing you accomplished recently that you haven’t given yourself enough credit for?', day: 'any', theme: 'Giving Yourself Credit' },
+          { cat: 'Future and purpose', q: 'Are you spending your time on things that genuinely matter to you?', day: 'any', theme: 'Living with Purpose' },
+          { cat: 'Future and purpose', q: 'What would you like to do differently or more gently next week?', day: 'any', theme: 'Looking Forward' }
+        ]
+
+        const insertPrompt = db.prepare(`
+          INSERT INTO selah_moments_prompts (category, question, day_hint, theme)
+          VALUES (?, ?, ?, ?)
+        `)
+        for (const p of seedPrompts) {
+          insertPrompt.run(p.cat, p.q, p.day, p.theme)
+        }
+      }
+
+      db.exec(`INSERT OR REPLACE INTO schema_version (version) VALUES (8);`)
+    } catch (err) {
+      console.error('Error running migration v8:', err)
     }
   }
 
@@ -1196,12 +1402,14 @@ export function exportAllData(): {
   classes: ClassRecord[]
   scheduleEvents: ScheduleEventRecord[]
   dailyPlans: DailyPlanRecord[]
+  momentsReflections: SelahReflectionRecord[]
+  momentsReminders: SelahReminderRecord[]
   settings: Record<string, string>
   importHistory: ImportHistoryRecord[]
 } {
   const d = getDatabase()
   return {
-    version: 2,
+    version: 3,
     exportedAt: new Date().toISOString(),
     tasks: d.prepare('SELECT * FROM tasks').all() as TaskRecord[],
     classes: d.prepare('SELECT * FROM classes').all() as ClassRecord[],
@@ -1210,6 +1418,8 @@ export function exportAllData(): {
       ...p,
       notes: p.notes ? decryptAtRest(p.notes) : null
     })),
+    momentsReflections: d.prepare('SELECT * FROM selah_moments_reflections').all() as SelahReflectionRecord[],
+    momentsReminders: d.prepare('SELECT * FROM selah_moments_reminders').all() as SelahReminderRecord[],
     settings: getAllSettings(),
     importHistory: d.prepare('SELECT * FROM import_history').all() as ImportHistoryRecord[]
   }
@@ -1221,6 +1431,8 @@ export function importAllData(
     classes?: ClassRecord[]
     scheduleEvents?: ScheduleEventRecord[]
     dailyPlans?: DailyPlanRecord[]
+    momentsReflections?: SelahReflectionRecord[]
+    momentsReminders?: SelahReminderRecord[]
     settings?: Record<string, string>
   },
   mode: 'replace' | 'merge' = 'replace'
@@ -1340,6 +1552,47 @@ export function importAllData(
       }
     }
 
+    if (Array.isArray(data.momentsReflections)) {
+      if (!isMerge) d.prepare('DELETE FROM selah_moments_reflections').run()
+      const insertRefl = d.prepare(`
+        INSERT INTO selah_moments_reflections (week_key, date_key, prompt_id, prompt_question, category, response_text, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      for (const r of data.momentsReflections) {
+        if (!r || !r.prompt_question || !r.response_text) continue
+        insertRefl.run(
+          r.week_key || '',
+          r.date_key || '',
+          r.prompt_id ?? null,
+          String(r.prompt_question).slice(0, 500),
+          String(r.category || 'General').slice(0, 100),
+          String(r.response_text),
+          r.created_at || new Date().toISOString(),
+          r.updated_at || new Date().toISOString()
+        )
+      }
+    }
+
+    if (Array.isArray(data.momentsReminders)) {
+      if (!isMerge) d.prepare('DELETE FROM selah_moments_reminders').run()
+      const insertRem = d.prepare(`
+        INSERT INTO selah_moments_reminders (title, content, category, is_pinned, is_favorite, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `)
+      for (const m of data.momentsReminders) {
+        if (!m || !m.title || !m.content) continue
+        insertRem.run(
+          String(m.title).slice(0, 240),
+          String(m.content),
+          String(m.category || 'General').slice(0, 100),
+          m.is_pinned ? 1 : 0,
+          m.is_favorite ? 1 : 0,
+          m.created_at || new Date().toISOString(),
+          m.updated_at || new Date().toISOString()
+        )
+      }
+    }
+
     if (data.settings && typeof data.settings === 'object') {
       const insertSetting = d.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
       for (const [k, v] of Object.entries(data.settings)) {
@@ -1354,7 +1607,7 @@ export function importAllData(
   return true
 }
 
-export function clearAllData(options: { tasks?: boolean; classes?: boolean; plans?: boolean; schedules?: boolean }): void {
+export function clearAllData(options: { tasks?: boolean; classes?: boolean; plans?: boolean; schedules?: boolean; moments?: boolean }): void {
   const d = getDatabase()
   if (options.tasks) d.prepare('DELETE FROM tasks').run()
   if (options.classes) d.prepare('DELETE FROM classes').run()
@@ -1363,6 +1616,10 @@ export function clearAllData(options: { tasks?: boolean; classes?: boolean; plan
     d.prepare('DELETE FROM event_reminders').run()
     d.prepare('DELETE FROM schedule_events').run()
     d.prepare('DELETE FROM source_documents').run()
+  }
+  if (options.moments) {
+    d.prepare('DELETE FROM selah_moments_reflections').run()
+    d.prepare('DELETE FROM selah_moments_reminders').run()
   }
 }
 
@@ -2000,4 +2257,252 @@ export function getUserStreakAndBadges(): UserStreakAndBadges {
     totalStudyHours,
     badges
   }
+}
+
+// ----------------- Selah Moments Data Access -----------------
+
+export function listMomentsMessages(category?: string, onlyFavorites?: boolean): SelahMessageRecord[] {
+  const d = getDatabase()
+  let sql = 'SELECT * FROM selah_moments_messages WHERE 1=1'
+  const params: any[] = []
+
+  if (category && category !== 'All') {
+    sql += ' AND category = ?'
+    params.push(category)
+  }
+  if (onlyFavorites) {
+    sql += ' AND is_favorite = 1'
+  }
+
+  sql += ' ORDER BY id ASC'
+  return d.prepare(sql).all(...params) as SelahMessageRecord[]
+}
+
+export function toggleMomentsMessageFavorite(id: number): boolean {
+  const d = getDatabase()
+  d.prepare(`
+    UPDATE selah_moments_messages
+    SET is_favorite = CASE WHEN is_favorite = 1 THEN 0 ELSE 1 END
+    WHERE id = ?
+  `).run(id)
+  const row = d.prepare('SELECT is_favorite FROM selah_moments_messages WHERE id = ?').get(id) as { is_favorite: number } | undefined
+  return Boolean(row?.is_favorite)
+}
+
+export function getRandomMomentsMessage(category?: string): SelahMessageRecord | null {
+  const d = getDatabase()
+  if (category && category !== 'All') {
+    return (d.prepare('SELECT * FROM selah_moments_messages WHERE category = ? ORDER BY RANDOM() LIMIT 1').get(category) as SelahMessageRecord) ?? null
+  }
+  return (d.prepare('SELECT * FROM selah_moments_messages ORDER BY RANDOM() LIMIT 1').get() as SelahMessageRecord) ?? null
+}
+
+export function getDailyMomentsMessage(): SelahMessageRecord | null {
+  const d = getDatabase()
+  const messages = d.prepare('SELECT * FROM selah_moments_messages ORDER BY id ASC').all() as SelahMessageRecord[]
+  if (!messages || messages.length === 0) return null
+
+  const now = new Date()
+  const startOfYear = new Date(now.getFullYear(), 0, 0)
+  const diff = (now.getTime() - startOfYear.getTime()) + ((startOfYear.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000)
+  const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+  const index = Math.abs(dayOfYear) % messages.length
+  return messages[index] || messages[0]
+}
+
+export function listMomentsPrompts(category?: string): SelahPromptRecord[] {
+  const d = getDatabase()
+  if (category && category !== 'All') {
+    return d.prepare('SELECT * FROM selah_moments_prompts WHERE category = ? ORDER BY id ASC').all(category) as SelahPromptRecord[]
+  }
+  return d.prepare('SELECT * FROM selah_moments_prompts ORDER BY id ASC').all() as SelahPromptRecord[]
+}
+
+export function getWeeklyMomentsPrompt(weekKey?: string, dayOfWeek?: number): SelahPromptRecord | null {
+  const d = getDatabase()
+  const prompts = d.prepare('SELECT * FROM selah_moments_prompts ORDER BY id ASC').all() as SelahPromptRecord[]
+  if (!prompts || prompts.length === 0) return null
+
+  // If a specific day hint matches (1=Mon, 3=Wed, 5=Fri, 0=Sun)
+  let hint: string | null = null
+  if (dayOfWeek === 1) hint = 'monday'
+  else if (dayOfWeek === 3) hint = 'wednesday'
+  else if (dayOfWeek === 5) hint = 'friday'
+  else if (dayOfWeek === 0) hint = 'sunday'
+
+  if (hint) {
+    const dayMatches = prompts.filter(p => p.day_hint === hint)
+    if (dayMatches.length > 0) {
+      // Pick based on week hash
+      let seed = 0
+      if (weekKey) {
+        for (let i = 0; i < weekKey.length; i++) seed += weekKey.charCodeAt(i)
+      }
+      return dayMatches[seed % dayMatches.length]
+    }
+  }
+
+  // Fallback to weekly cycle
+  let weekNum = 1
+  if (weekKey) {
+    const match = weekKey.match(/W(\d+)/i)
+    if (match) weekNum = parseInt(match[1], 10) || 1
+  }
+  return prompts[weekNum % prompts.length] || prompts[0]
+}
+
+export function listMomentsReflections(weekKey?: string): SelahReflectionRecord[] {
+  const d = getDatabase()
+  if (weekKey) {
+    return d.prepare('SELECT * FROM selah_moments_reflections WHERE week_key = ? ORDER BY date_key DESC, created_at DESC').all(weekKey) as SelahReflectionRecord[]
+  }
+  return d.prepare('SELECT * FROM selah_moments_reflections ORDER BY date_key DESC, created_at DESC').all() as SelahReflectionRecord[]
+}
+
+export function saveMomentsReflection(payload: {
+  id?: number
+  weekKey: string
+  dateKey: string
+  promptId?: number | null
+  promptQuestion: string
+  category: string
+  responseText: string
+}): SelahReflectionRecord {
+  const d = getDatabase()
+  const now = new Date().toISOString()
+
+  if (payload.id) {
+    d.prepare(`
+      UPDATE selah_moments_reflections
+      SET prompt_question = ?, category = ?, response_text = ?, updated_at = ?
+      WHERE id = ?
+    `).run(
+      payload.promptQuestion,
+      payload.category,
+      payload.responseText,
+      now,
+      payload.id
+    )
+    return d.prepare('SELECT * FROM selah_moments_reflections WHERE id = ?').get(payload.id) as SelahReflectionRecord
+  }
+
+  const result = d.prepare(`
+    INSERT INTO selah_moments_reflections (week_key, date_key, prompt_id, prompt_question, category, response_text, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    payload.weekKey,
+    payload.dateKey,
+    payload.promptId ?? null,
+    payload.promptQuestion,
+    payload.category,
+    payload.responseText,
+    now,
+    now
+  )
+
+  return d.prepare('SELECT * FROM selah_moments_reflections WHERE id = ?').get(result.lastInsertRowid) as SelahReflectionRecord
+}
+
+export function deleteMomentsReflection(id: number): boolean {
+  const d = getDatabase()
+  const res = d.prepare('DELETE FROM selah_moments_reflections WHERE id = ?').run(id)
+  return res.changes > 0
+}
+
+export function listMomentsReminders(category?: string, search?: string): SelahReminderRecord[] {
+  const d = getDatabase()
+  let sql = 'SELECT * FROM selah_moments_reminders WHERE 1=1'
+  const params: any[] = []
+
+  if (category && category !== 'All') {
+    sql += ' AND category = ?'
+    params.push(category)
+  }
+  if (search && search.trim()) {
+    sql += ' AND (title LIKE ? OR content LIKE ?)'
+    const pattern = `%${search.trim()}%`
+    params.push(pattern, pattern)
+  }
+
+  sql += ' ORDER BY is_pinned DESC, is_favorite DESC, updated_at DESC'
+  return d.prepare(sql).all(...params) as SelahReminderRecord[]
+}
+
+export function saveMomentsReminder(payload: {
+  id?: number
+  title: string
+  content: string
+  category?: string
+  isPinned?: boolean
+  isFavorite?: boolean
+}): SelahReminderRecord {
+  const d = getDatabase()
+  const now = new Date().toISOString()
+  const cat = payload.category && payload.category.trim() ? payload.category.trim() : 'General'
+
+  if (payload.id) {
+    d.prepare(`
+      UPDATE selah_moments_reminders
+      SET title = ?, content = ?, category = ?,
+          is_pinned = COALESCE(?, is_pinned),
+          is_favorite = COALESCE(?, is_favorite),
+          updated_at = ?
+      WHERE id = ?
+    `).run(
+      payload.title.trim(),
+      payload.content.trim(),
+      cat,
+      payload.isPinned !== undefined ? (payload.isPinned ? 1 : 0) : null,
+      payload.isFavorite !== undefined ? (payload.isFavorite ? 1 : 0) : null,
+      now,
+      payload.id
+    )
+    return d.prepare('SELECT * FROM selah_moments_reminders WHERE id = ?').get(payload.id) as SelahReminderRecord
+  }
+
+  const result = d.prepare(`
+    INSERT INTO selah_moments_reminders (title, content, category, is_pinned, is_favorite, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    payload.title.trim(),
+    payload.content.trim(),
+    cat,
+    payload.isPinned ? 1 : 0,
+    payload.isFavorite ? 1 : 0,
+    now,
+    now
+  )
+
+  return d.prepare('SELECT * FROM selah_moments_reminders WHERE id = ?').get(result.lastInsertRowid) as SelahReminderRecord
+}
+
+export function deleteMomentsReminder(id: number): boolean {
+  const d = getDatabase()
+  const res = d.prepare('DELETE FROM selah_moments_reminders WHERE id = ?').run(id)
+  return res.changes > 0
+}
+
+export function toggleMomentsReminderPinned(id: number): boolean {
+  const d = getDatabase()
+  const now = new Date().toISOString()
+  d.prepare(`
+    UPDATE selah_moments_reminders
+    SET is_pinned = CASE WHEN is_pinned = 1 THEN 0 ELSE 1 END, updated_at = ?
+    WHERE id = ?
+  `).run(now, id)
+  const row = d.prepare('SELECT is_pinned FROM selah_moments_reminders WHERE id = ?').get(id) as { is_pinned: number } | undefined
+  return Boolean(row?.is_pinned)
+}
+
+export function toggleMomentsReminderFavorite(id: number): boolean {
+  const d = getDatabase()
+  const now = new Date().toISOString()
+  d.prepare(`
+    UPDATE selah_moments_reminders
+    SET is_favorite = CASE WHEN is_favorite = 1 THEN 0 ELSE 1 END, updated_at = ?
+    WHERE id = ?
+  `).run(now, id)
+  const row = d.prepare('SELECT is_favorite FROM selah_moments_reminders WHERE id = ?').get(id) as { is_favorite: number } | undefined
+  return Boolean(row?.is_favorite)
 }

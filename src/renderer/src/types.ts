@@ -253,7 +253,59 @@ export interface UserStreakAndBadges {
   badges: Array<{ id: string; title: string; description: string; icon: string; unlocked: boolean }>
 }
 
-export type ActiveTab = 'today' | 'timetable' | 'schedules' | 'tasks' | 'plan' | 'weekly' | 'settings'
+export type ActiveTab = 'today' | 'timetable' | 'schedules' | 'tasks' | 'plan' | 'weekly' | 'moments' | 'settings'
+
+export type SelahCategory =
+  | 'Self-worth and confidence'
+  | 'Faith and spirituality'
+  | 'Patience and personal growth'
+  | 'Resilience and overcoming difficulties'
+  | 'Rest and self-compassion'
+  | 'Discipline and consistency'
+  | 'Gratitude and appreciation'
+  | 'Hope and new beginnings'
+  | 'Relationships and kindness'
+
+export interface SelahMessage {
+  id: number
+  category: SelahCategory
+  message: string
+  source_type: 'original' | 'scripture'
+  scripture_ref?: string | null
+  is_favorite: number
+  created_at: string
+}
+
+export interface SelahPrompt {
+  id: number
+  category: 'Personal growth' | 'Gratitude' | 'Emotional well-being' | 'Faith' | 'Relationships' | 'Future and purpose'
+  question: string
+  day_hint?: 'monday' | 'wednesday' | 'friday' | 'sunday' | 'any'
+  theme?: string
+}
+
+export interface SelahReflection {
+  id: number
+  week_key: string // e.g. "2026-W46"
+  date_key: string // "YYYY-MM-DD"
+  prompt_id?: number | null
+  prompt_question: string
+  category: string
+  response_text: string
+  created_at: string
+  updated_at: string
+}
+
+export interface SelahReminder {
+  id: number
+  title: string
+  content: string
+  category: string
+  is_pinned: number
+  is_favorite: number
+  created_at: string
+  updated_at: string
+}
 
 export const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 export const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']

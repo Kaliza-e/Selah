@@ -188,6 +188,22 @@ const api = {
   getWeeklyReflectionReport: (startDate: string, endDate: string) => ipcRenderer.invoke('analytics:get-reflection-report', startDate, endDate),
   getUserStreakAndBadges: () => ipcRenderer.invoke('analytics:get-streaks-and-badges'),
 
+  // Selah Moments
+  listMomentsMessages: (category?: string, onlyFavorites?: boolean) => ipcRenderer.invoke('moments:list-messages', category, onlyFavorites),
+  toggleMomentsMessageFavorite: (id: number) => ipcRenderer.invoke('moments:toggle-favorite-message', id),
+  getDailyMomentsMessage: () => ipcRenderer.invoke('moments:get-daily-message'),
+  getRandomMomentsMessage: (category?: string) => ipcRenderer.invoke('moments:get-random-message', category),
+  listMomentsPrompts: (category?: string) => ipcRenderer.invoke('moments:list-prompts', category),
+  getWeeklyMomentsPrompt: (weekKey?: string, dayOfWeek?: number) => ipcRenderer.invoke('moments:get-weekly-prompt', weekKey, dayOfWeek),
+  listMomentsReflections: (weekKey?: string) => ipcRenderer.invoke('moments:list-reflections', weekKey),
+  saveMomentsReflection: (payload: any) => ipcRenderer.invoke('moments:save-reflection', payload),
+  deleteMomentsReflection: (id: number) => ipcRenderer.invoke('moments:delete-reflection', id),
+  listMomentsReminders: (category?: string, search?: string) => ipcRenderer.invoke('moments:list-reminders', category, search),
+  saveMomentsReminder: (payload: any) => ipcRenderer.invoke('moments:save-reminder', payload),
+  deleteMomentsReminder: (id: number) => ipcRenderer.invoke('moments:delete-reminder', id),
+  toggleMomentsReminderPinned: (id: number) => ipcRenderer.invoke('moments:toggle-reminder-pinned', id),
+  toggleMomentsReminderFavorite: (id: number) => ipcRenderer.invoke('moments:toggle-reminder-favorite', id),
+
   // Application Info
   getAppVersion: () => ipcRenderer.invoke('app:get-version'),
   checkForUpdates: () => ipcRenderer.invoke('app:check-updates')

@@ -9,7 +9,8 @@ import {
   Play,
   Sun,
   Calendar,
-  CornerDownLeft
+  CornerDownLeft,
+  Sparkles
 } from 'lucide-react'
 import type { ActiveTab, Task } from '../types'
 
@@ -105,6 +106,17 @@ export function CommandPaletteModal({
         icon: CheckSquare,
         action: () => {
           onNavigate('tasks')
+          onClose()
+        }
+      },
+      {
+        id: 'nav-moments',
+        label: 'Go to Selah Moments',
+        category: 'Navigation',
+        hint: 'Pause & Reflect',
+        icon: Sparkles,
+        action: () => {
+          onNavigate('moments')
           onClose()
         }
       },
