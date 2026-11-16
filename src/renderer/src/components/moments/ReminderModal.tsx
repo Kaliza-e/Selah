@@ -104,92 +104,97 @@ export function ReminderModal({
           </h3>
           <button
             type="button"
-            className="modal-close-btn"
+            className="btn-icon"
             onClick={onClose}
             aria-label="Close dialog"
+            title="Close"
           >
             <X size={16} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          {error && <div className="form-error-banner">{error}</div>}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}>
+          <div className="modal-body">
+            {error && <div className="form-error-banner" style={{ marginBottom: 10 }}>{error}</div>}
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="reminder-title">
-              Title or Anchor Phrase *
-            </label>
-            <input
-              id="reminder-title"
-              type="text"
-              className="form-input"
-              placeholder="e.g. My worth is not in my grades, Philippians 4:13..."
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              autoFocus
-              maxLength={200}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="reminder-category">
-              Category
-            </label>
-            <select
-              id="reminder-category"
-              className="form-select"
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-            >
-              {REMINDER_CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="reminder-content">
-              Words to Remember *
-            </label>
-            <textarea
-              id="reminder-content"
-              className="form-textarea"
-              rows={4}
-              placeholder="Write the words, scripture, or note you want to carry with you..."
-              value={content}
-              onChange={e => setContent(e.target.value)}
-              maxLength={4000}
-            />
-          </div>
-
-          <div className="form-checkbox-row" style={{ display: 'flex', gap: 16, marginTop: 12 }}>
-            <label className="form-checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
+            <div className="input-group">
+              <label className="input-label" htmlFor="reminder-title">
+                Title or Anchor Phrase *
+              </label>
               <input
-                type="checkbox"
-                checked={isPinned}
-                onChange={e => setIsPinned(e.target.checked)}
+                id="reminder-title"
+                type="text"
+                className="input-field"
+                placeholder="e.g. My worth is not in my grades, Philippians 4:13..."
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                autoFocus
+                maxLength={200}
               />
-              <Pin size={13} />
-              <span>Pin to top</span>
-            </label>
+            </div>
 
-            <label className="form-checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
-              <input
-                type="checkbox"
-                checked={isFavorite}
-                onChange={e => setIsFavorite(e.target.checked)}
+            <div className="input-group">
+              <label className="input-label" htmlFor="reminder-category">
+                Category
+              </label>
+              <select
+                id="reminder-category"
+                className="select-field"
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+              >
+                {REMINDER_CATEGORIES.map(cat => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="input-group">
+              <label className="input-label" htmlFor="reminder-content">
+                Words to Remember *
+              </label>
+              <textarea
+                id="reminder-content"
+                className="textarea-field"
+                rows={4}
+                placeholder="Write the words, scripture, or note you want to carry with you..."
+                value={content}
+                onChange={e => setContent(e.target.value)}
+                maxLength={4000}
               />
-              <Heart size={13} />
-              <span>Mark as favourite</span>
-            </label>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 4, padding: '4px 0' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontSize: 12.5, color: 'var(--text-secondary)' }}>
+                <input
+                  type="checkbox"
+                  checked={isPinned}
+                  onChange={e => setIsPinned(e.target.checked)}
+                  style={{ accentColor: 'var(--accent-purple)', width: 14, height: 14, cursor: 'pointer' }}
+                />
+                <Pin size={13} color="var(--accent-purple)" />
+                <span>Pin to top</span>
+              </label>
+
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontSize: 12.5, color: 'var(--text-secondary)' }}>
+                <input
+                  type="checkbox"
+                  checked={isFavorite}
+                  onChange={e => setIsFavorite(e.target.checked)}
+                  style={{ accentColor: 'var(--accent-purple)', width: 14, height: 14, cursor: 'pointer' }}
+                />
+                <Heart size={13} color="#f43f5e" fill={isFavorite ? '#f43f5e' : 'none'} />
+                <span>Mark as favourite</span>
+              </label>
+            </div>
           </div>
 
-          <div className="modal-actions" style={{ marginTop: 20 }}>
+          <div className="modal-footer">
             <button
               type="button"
-              className="btn-secondary-pill"
+              className="btn btn-secondary"
               onClick={onClose}
               disabled={isSaving}
             >
@@ -197,11 +202,11 @@ export function ReminderModal({
             </button>
             <button
               type="submit"
-              className="btn-primary-pill"
-              disabled={isSaving}
+              className="btn btn-primary"
+              disabled={isSaving || !title.trim() || !content.trim()}
             >
               <Save size={14} />
-              <span>{isSaving ? 'Saving...' : initialData ? 'Update' : 'Save Reminder'}</span>
+              <span>{isSaving ? 'Saving…' : initialData ? 'Update Reminder' : 'Save Reminder'}</span>
             </button>
           </div>
         </form>
