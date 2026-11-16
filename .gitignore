@@ -9,4 +9,6 @@ dist/
 .env.*
 *.enc
 *.key
+dist-release/
+artifacts/
 

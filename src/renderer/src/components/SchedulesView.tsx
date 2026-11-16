@@ -325,20 +325,35 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
           <button
             type="button"
             className="btn-primary-pill"
-            style={{ background: 'var(--accent-purple-btn)' }}
-            onClick={() => setIsCreatorModalOpen(true)}
-            title="Design a study plan, exam prep, or weekly schedule"
+            style={{ background: 'var(--accent-purple-btn)', height: 32 }}
+            onClick={() => {
+              setEditingEvent(null)
+              setIsEventModalOpen(true)
+            }}
+            title="Create a new schedule event"
+            aria-label="New event"
           >
-            <CalendarPlus size={13} /> Create Schedule
+            <Plus size={13} /> <span>New Event</span>
           </button>
 
           <button
             type="button"
             className="btn-secondary-pill"
+            style={{ height: 32 }}
+            onClick={() => setIsCreatorModalOpen(true)}
+            title="Design a study plan, exam prep, or weekly schedule"
+          >
+            <CalendarPlus size={13} /> <span>Create Schedule</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn-secondary-pill"
+            style={{ height: 32 }}
             onClick={handleImportDocument}
             title="Import PDF, Excel, Word, CSV, or .ics"
           >
-            <Upload size={13} /> Import
+            <Upload size={13} /> <span>Import</span>
           </button>
 
           {/* Export Dropdown with Portal collision detection */}
@@ -346,6 +361,7 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
             <button
               type="button"
               className="btn-secondary-pill"
+              style={{ height: 32 }}
               onClick={(e) => {
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
                 setExportAnchor(exportAnchor ? null : rect)
@@ -353,7 +369,7 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
               title="Export schedules to PDF, Excel, CSV, or iCalendar"
               aria-label="Export schedules"
             >
-              <Download size={13} /> Export
+              <Download size={13} /> <span>Export</span>
             </button>
 
             <PortalMenu
@@ -411,20 +427,8 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
 
           <button
             type="button"
-            className="btn-secondary-pill"
-            onClick={() => {
-              setEditingEvent(null)
-              setIsEventModalOpen(true)
-            }}
-            title="New event"
-            aria-label="New event"
-          >
-            <Plus size={13} /> <span>New event</span>
-          </button>
-
-          <button
-            type="button"
             className={`btn-secondary-pill ${isDocsDrawerOpen ? 'active' : ''}`}
+            style={{ height: 32 }}
             onClick={() => setIsDocsDrawerOpen(prev => !prev)}
             title="View imported source documents"
           >
@@ -450,13 +454,14 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
       {/* Filter and Search Bar: Single Time Segmented Control + Status Dropdown + Category + Search */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
         {/* Date Segmented Control: Upcoming / This Week / This Month / Past / All */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <div className="day-pills-row">
             {(['upcoming', 'this_week', 'this_month', 'past', 'all'] as const).map(df => (
               <button
                 key={df}
                 type="button"
                 className={`day-pill-btn ${dateFilter === df ? 'active' : ''}`}
+                style={{ height: 32, display: 'inline-flex', alignItems: 'center' }}
                 onClick={() => setDateFilter(df)}
               >
                 {df === 'upcoming' ? 'Upcoming' : df === 'this_week' ? 'This Week' : df === 'this_month' ? 'This Month' : df === 'past' ? 'Past' : 'All'}
@@ -467,7 +472,7 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
           {/* Single Status Dropdown */}
           <select
             className="select-field"
-            style={{ padding: '5px 10px', fontSize: 12, height: 32, width: 'auto' }}
+            style={{ padding: '0 28px 0 10px', fontSize: 12, height: 32, width: 'auto' }}
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value as 'all' | 'active' | 'completed')}
             aria-label="Filter events by status"
@@ -480,7 +485,7 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
           {/* Category Dropdown */}
           <select
             className="select-field"
-            style={{ padding: '5px 10px', fontSize: 12, height: 32, width: 'auto' }}
+            style={{ padding: '0 28px 0 10px', fontSize: 12, height: 32, width: 'auto' }}
             value={selectedCategory}
             onChange={e => setSelectedCategory(e.target.value)}
             aria-label="Filter events by category"
@@ -496,7 +501,7 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
           {selectedDocId && (
             <span
               className="day-pill-btn active"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11 }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, height: 32 }}
             >
               Doc: {sourceDocs.find(d => d.id === selectedDocId)?.file_name || selectedDocId}
               <X size={11} style={{ cursor: 'pointer' }} onClick={() => setSelectedDocId(null)} />
@@ -540,21 +545,78 @@ export function SchedulesView({ onShowMessage }: SchedulesViewProps) {
               Loading schedules...
             </div>
           ) : Object.keys(groupedEvents).length === 0 ? (
-            <div className="empty-state" style={{ textAlign: 'center', padding: '48px 16px', background: 'var(--bg-card-subtle)', borderRadius: 10, border: '1px dashed var(--border-subtle)' }}>
-              <CalendarDays size={32} color="var(--accent-cyan)" style={{ opacity: 0.6, marginBottom: 8 }} />
-              <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>No scheduled events found</h3>
-              <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 14px 0', maxWidth: 360 }}>
-                Import an academic calendar, continuous assessment timetable, or document to populate this timeline.
+            <div
+              className="empty-state"
+              style={{
+                textAlign: 'center',
+                padding: '40px 24px',
+                background: 'var(--bg-card)',
+                borderRadius: 12,
+                border: '1px solid var(--border-card)',
+                maxWidth: 520,
+                width: '100%',
+                margin: '32px auto',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
+              }}
+            >
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: '50%',
+                  background: 'var(--accent-purple-bg)',
+                  border: '1px solid rgba(124, 58, 237, 0.25)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 12
+                }}
+              >
+                <CalendarDays size={24} color="var(--accent-purple)" />
+              </div>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
+                No scheduled events found
+              </h3>
+              <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', margin: '0 0 20px 0', maxWidth: 420, lineHeight: 1.5 }}>
+                Import an academic calendar, continuous assessment timetable, or create custom study and assignment milestones.
               </p>
-              <button type="button" className="btn-primary" style={{ fontSize: 12 }} onClick={handleImportDocument}>
-                <Upload size={13} /> Import First Schedule
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn-primary-pill"
+                  style={{ background: 'var(--accent-purple-btn)', height: 32 }}
+                  onClick={() => {
+                    setEditingEvent(null)
+                    setIsEventModalOpen(true)
+                  }}
+                >
+                  <Plus size={13} /> Add First Event
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary-pill"
+                  style={{ height: 32 }}
+                  onClick={handleImportDocument}
+                >
+                  <Upload size={13} /> Import Schedule
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary-pill"
+                  style={{ height: 32 }}
+                  onClick={() => setIsCreatorModalOpen(true)}
+                >
+                  <CalendarPlus size={13} /> Create Schedule
+                </button>
+              </div>
             </div>
           ) : (
             Object.entries(groupedEvents).map(([yearMonth, monthEvents]) => (
               <div key={yearMonth} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {/* Month Sticky Header */}
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--accent-cyan)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--accent-purple)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span>{formatMonthHeader(yearMonth)}</span>
                   <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
                   <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>

@@ -1,7 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   CalendarDays,
+  Calendar,
+  Clock,
   ListTodo,
+  Sparkles as SparklesIcon,
   BarChart3,
   Settings as SettingsIcon,
   Home,
@@ -566,14 +569,18 @@ export default function App() {
                       type="button"
                       className={`day-pill-btn ${activeTab === 'schedules' ? 'active' : ''}`}
                       onClick={() => setActiveTab('schedules')}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
+                      <Calendar size={13} />
                       Events & Calendars
                     </button>
                     <button
                       type="button"
                       className={`day-pill-btn ${activeTab === 'timetable' ? 'active' : ''}`}
                       onClick={() => setActiveTab('timetable')}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
+                      <Clock size={13} />
                       Weekly Timetable
                     </button>
                   </div>
@@ -599,14 +606,18 @@ export default function App() {
                       type="button"
                       className={`day-pill-btn ${activeTab === 'tasks' ? 'active' : ''}`}
                       onClick={() => setActiveTab('tasks')}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
+                      <ListTodo size={13} />
                       All Tasks
                     </button>
                     <button
                       type="button"
                       className={`day-pill-btn ${activeTab === 'plan' ? 'active' : ''}`}
                       onClick={() => setActiveTab('plan')}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
+                      <Sparkles size={13} />
                       Tomorrow Planner
                     </button>
                   </div>

@@ -104,12 +104,12 @@ export function ReminderModal({
           </h3>
           <button
             type="button"
-            className="btn-icon"
+            className="win-btn"
             onClick={onClose}
             aria-label="Close dialog"
             title="Close"
           >
-            <X size={16} />
+            <X size={15} />
           </button>
         </div>
 
