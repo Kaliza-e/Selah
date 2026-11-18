@@ -1719,12 +1719,13 @@ export function listScheduleEvents(filters: ListScheduleEventsFilters = {}): Sch
     params.push(filters.category)
   }
 
-  if (filters.startDate) {
-    conditions.push('e.start_date >= ?')
+  if (filters.startDate && filters.endDate) {
+    conditions.push('COALESCE(e.end_date, e.start_date) >= ? AND e.start_date <= ?')
+    params.push(filters.startDate, filters.endDate)
+  } else if (filters.startDate) {
+    conditions.push('COALESCE(e.end_date, e.start_date) >= ?')
     params.push(filters.startDate)
-  }
-
-  if (filters.endDate) {
+  } else if (filters.endDate) {
     conditions.push('e.start_date <= ?')
     params.push(filters.endDate)
   }

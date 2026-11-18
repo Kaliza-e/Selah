@@ -60,7 +60,8 @@ run({
     resolve('test/phase4Features.test.mjs'),
     resolve('test/durationAndMigration.test.mjs'),
     resolve('test/phase7Features.test.mjs'),
-    resolve('test/selahMoments.test.mjs')
+    resolve('test/selahMoments.test.mjs'),
+    resolve('test/fullAuditE2E.test.mjs')
   ]
 })
   .on('test:fail', () => {
