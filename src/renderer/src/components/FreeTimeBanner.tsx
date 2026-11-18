@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Clock,
   CheckCircle2,
+  Check,
   ExternalLink,
   BellOff,
   X,
@@ -32,6 +33,7 @@ export function FreeTimeBanner({
 }: FreeTimeBannerProps) {
   const [suggestion, setSuggestion] = useState<FreeTimeSuggestion | null>(null)
   const [loadingAction, setLoadingAction] = useState(false)
+  const [isTaskDone, setIsTaskDone] = useState(false)
 
   const fetchSuggestion = useCallback(async () => {
     try {
@@ -50,22 +52,47 @@ export function FreeTimeBanner({
     return () => clearInterval(interval)
   }, [fetchSuggestion, today])
 
+  useEffect(() => {
+    setIsTaskDone(Boolean(suggestion?.suggestedTask?.completed))
+  }, [suggestion?.suggestedTask?.id, suggestion?.suggestedTask?.completed])
+
   if (!suggestion || !suggestion.hasFreeTime || suggestion.isSnoozed) {
     return null
   }
 
   const { freeMinutes, freeUntil, nextEventTitle, slotKey, suggestedTask } = suggestion
 
-  async function handleCompleteTask() {
-    if (!suggestedTask) return
+  async function handleToggleSuggestedTask(e?: React.MouseEvent) {
+    if (e) {
+      e.stopPropagation()
+    }
+    if (!suggestedTask || loadingAction) return
+    const nextCompleted = !isTaskDone
+    setIsTaskDone(nextCompleted)
     setLoadingAction(true)
     try {
-      await window.hello11824.completeSuggestedTask(suggestedTask.id)
-      onShowMessage(`Completed "${suggestedTask.title}"! Great job making use of free time.`)
+      if (window.hello11824?.toggleTask) {
+        await window.hello11824.toggleTask(suggestedTask.id, nextCompleted)
+      } else {
+        await window.hello11824.completeSuggestedTask(suggestedTask.id)
+      }
+      if (nextCompleted) {
+        onShowMessage(`Completed "${suggestedTask.title}"! Great job making use of free time.`)
+      } else {
+        onShowMessage(`Marked "${suggestedTask.title}" as incomplete.`)
+      }
       await onRefreshTasks()
-      await fetchSuggestion()
+      // Give clear visual feedback when checked before advancing suggestion
+      if (nextCompleted) {
+        setTimeout(async () => {
+          await fetchSuggestion()
+        }, 700)
+      } else {
+        await fetchSuggestion()
+      }
     } catch (err) {
-      onShowMessage(`Failed to complete task: ${err instanceof Error ? err.message : String(err)}`)
+      setIsTaskDone(!nextCompleted)
+      onShowMessage(`Failed to update task: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setLoadingAction(false)
     }
@@ -150,11 +177,14 @@ export function FreeTimeBanner({
               style={{
                 fontSize: 11.5,
                 fontWeight: 600,
-                color: 'var(--text-primary)',
+                color: isTaskDone ? 'var(--text-muted)' : 'var(--text-primary)',
+                textDecoration: isTaskDone ? 'line-through' : 'none',
+                opacity: isTaskDone ? 0.6 : 1,
                 lineHeight: 1.3,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                transition: 'all 0.15s ease'
               }}
               title={suggestedTask.title}
             >
@@ -163,7 +193,7 @@ export function FreeTimeBanner({
             </span>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {onOpenFocusTimer && (
+              {onOpenFocusTimer && !isTaskDone && (
                 <button
                   type="button"
                   className="btn-tiny-action"
@@ -176,12 +206,13 @@ export function FreeTimeBanner({
               )}
               <button
                 type="button"
-                className="btn-tiny-action complete"
-                onClick={handleCompleteTask}
+                className={`btn-tiny-action complete ${isTaskDone ? 'active' : ''}`}
+                onClick={handleToggleSuggestedTask}
                 disabled={loadingAction}
-                title="Mark task completed"
+                title={isTaskDone ? 'Mark task incomplete' : 'Mark task completed'}
               >
-                <CheckCircle2 size={11} /> Done
+                {isTaskDone ? <Check size={11} strokeWidth={2.5} /> : <CheckCircle2 size={11} />}
+                {isTaskDone ? 'Done' : 'Done'}
               </button>
               {onOpenTask && (
                 <button
@@ -265,13 +296,24 @@ export function FreeTimeBanner({
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
               <button
                 type="button"
-                className="task-checkbox-btn"
-                onClick={handleCompleteTask}
+                className={`task-checkbox-btn ${isTaskDone ? 'checked' : ''}`}
+                onClick={handleToggleSuggestedTask}
                 disabled={loadingAction}
-                aria-label="Mark task completed"
-                title="Mark completed"
+                aria-label={isTaskDone ? 'Mark task incomplete' : 'Mark task completed'}
+                title={isTaskDone ? 'Mark incomplete' : 'Mark completed'}
+                style={{
+                  width: 22,
+                  height: 22,
+                  minWidth: 22,
+                  minHeight: 22,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 4
+                }}
               >
-                <CheckCircle2 size={13} />
+                {isTaskDone ? <Check size={13} strokeWidth={2.5} /> : null}
               </button>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
@@ -279,10 +321,13 @@ export function FreeTimeBanner({
                   style={{
                     fontSize: 13,
                     fontWeight: 600,
-                    color: 'var(--text-primary)',
+                    color: isTaskDone ? 'var(--text-muted)' : 'var(--text-primary)',
+                    textDecoration: isTaskDone ? 'line-through' : 'none',
+                    opacity: isTaskDone ? 0.55 : 1,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   {suggestedTask.title}
@@ -312,7 +357,7 @@ export function FreeTimeBanner({
 
             {/* Quick Actions */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-              {onOpenFocusTimer && (
+              {onOpenFocusTimer && !isTaskDone && (
                 <button
                   type="button"
                   className="btn-primary-pill"
@@ -335,12 +380,18 @@ export function FreeTimeBanner({
 
               <button
                 type="button"
-                className="btn-secondary-pill"
-                style={{ padding: '6px 12px', fontSize: 11.5 }}
-                onClick={handleCompleteTask}
+                className={`btn-secondary-pill ${isTaskDone ? 'active' : ''}`}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: 11.5,
+                  background: isTaskDone ? 'var(--accent-purple)' : undefined,
+                  color: isTaskDone ? 'var(--text-on-accent)' : undefined
+                }}
+                onClick={handleToggleSuggestedTask}
                 disabled={loadingAction}
               >
-                <CheckCircle2 size={12} /> Mark Done
+                {isTaskDone ? <Check size={12} strokeWidth={2.5} /> : <CheckCircle2 size={12} />}
+                {isTaskDone ? 'Completed' : 'Mark Done'}
               </button>
 
               {onOpenTask && (
@@ -349,6 +400,7 @@ export function FreeTimeBanner({
                   className="btn-secondary-pill"
                   style={{ padding: '6px 12px', fontSize: 11.5 }}
                   onClick={() => onOpenTask(suggestedTask)}
+                  title="Open task details"
                 >
                   <ExternalLink size={12} /> Open Task
                 </button>

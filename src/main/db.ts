@@ -592,77 +592,40 @@ export function initDatabase(): Database.Database {
         CREATE INDEX IF NOT EXISTS idx_moments_reminders_pinned ON selah_moments_reminders(is_pinned, updated_at);
       `)
 
-      // Seed encouraging messages if empty
-      const msgCount = (db.prepare('SELECT count(*) as count FROM selah_moments_messages').get() as { count: number }).count
-      if (msgCount === 0) {
-        const seedMessages = [
-          // Self-worth and confidence
-          { cat: 'Self-worth and confidence', msg: 'Your worth is not determined by how much you accomplish.', type: 'original', ref: null },
-          { cat: 'Self-worth and confidence', msg: 'You are more than your achievements.', type: 'original', ref: null },
-          { cat: 'Self-worth and confidence', msg: "You don't have to have everything figured out to be making progress.", type: 'original', ref: null },
-          { cat: 'Self-worth and confidence', msg: 'Your worth is not measured by your productivity.', type: 'original', ref: null },
-          { cat: 'Self-worth and confidence', msg: 'I praise you because I am fearfully and wonderfully made; your works are wonderful, I know that full well.', type: 'scripture', ref: 'Psalm 139:14' },
-          { cat: 'Self-worth and confidence', msg: 'For we are God’s handiwork, created in Christ Jesus to do good works, which God prepared in advance for us to do.', type: 'scripture', ref: 'Ephesians 2:10' },
+      // Seed or prune encouraging messages to the 5 selected verses/quotes
+      const selectedMomentsSeed = [
+        // 1. Self-worth and confidence
+        { cat: 'Self-worth and confidence', msg: 'Your worth is not determined by how much you accomplish.', type: 'original', ref: null },
+        // 2. Rest and self-compassion
+        { cat: 'Rest and self-compassion', msg: 'Come to me, all who labor and are heavy laden, and I will give you rest.', type: 'scripture', ref: 'Matthew 11:28' },
+        // 3. Resilience and overcoming difficulties
+        { cat: 'Resilience and overcoming difficulties', msg: 'My grace is sufficient for you, for my power is made perfect in weakness.', type: 'scripture', ref: '2 Corinthians 12:9' },
+        // 4. Faith and spirituality
+        { cat: 'Faith and spirituality', msg: 'Be still, and know that I am God.', type: 'scripture', ref: 'Psalm 46:10' },
+        // 5. Hope and new beginnings
+        { cat: 'Hope and new beginnings', msg: 'For I know the plans I have for you, plans to give you hope and a future.', type: 'scripture', ref: 'Jeremiah 29:11' }
+      ]
 
-          // Faith and spirituality
-          { cat: 'Faith and spirituality', msg: 'Surrender the outcome and focus on being faithful in this moment.', type: 'original', ref: null },
-          { cat: 'Faith and spirituality', msg: 'When your steps feel small, remember God works through steady faithfulness.', type: 'original', ref: null },
-          { cat: 'Faith and spirituality', msg: 'Be still, and know that I am God: I will be exalted among the heathen, I will be exalted in the earth.', type: 'scripture', ref: 'Psalm 46:10' },
-          { cat: 'Faith and spirituality', msg: 'Trust in the LORD with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.', type: 'scripture', ref: 'Proverbs 3:5-6' },
-          { cat: 'Faith and spirituality', msg: 'The LORD is my shepherd; I shall not want. He maketh me to lie down in green pastures: he leadeth me beside the still waters.', type: 'scripture', ref: 'Psalm 23:1-2' },
-
-          // Patience and personal growth
-          { cat: 'Patience and personal growth', msg: 'You are allowed to grow at your own pace.', type: 'original', ref: null },
-          { cat: 'Patience and personal growth', msg: 'Progress does not always have to be visible.', type: 'original', ref: null },
-          { cat: 'Patience and personal growth', msg: 'Give yourself the same patience you give other people.', type: 'original', ref: null },
-          { cat: 'Patience and personal growth', msg: "You don't need to have everything figured out to take the next step.", type: 'original', ref: null },
-          { cat: 'Patience and personal growth', msg: 'To every thing there is a season, and a time to every purpose under the heaven.', type: 'scripture', ref: 'Ecclesiastes 3:1' },
-          { cat: 'Patience and personal growth', msg: 'Let perseverance finish its work so that you may be mature and complete, not lacking anything.', type: 'scripture', ref: 'James 1:4' },
-
-          // Resilience and overcoming difficulties
-          { cat: 'Resilience and overcoming difficulties', msg: 'Sometimes, beginning again is an act of courage.', type: 'original', ref: null },
-          { cat: 'Resilience and overcoming difficulties', msg: 'You have survived difficult days before, and you carry wisdom from every single one of them.', type: 'original', ref: null },
-          { cat: 'Resilience and overcoming difficulties', msg: 'Strength is not about never feeling tired; it is continuing with a gentle heart.', type: 'original', ref: null },
-          { cat: 'Resilience and overcoming difficulties', msg: 'My grace is sufficient for thee: for my strength is made perfect in weakness.', type: 'scripture', ref: '2 Corinthians 12:9' },
-          { cat: 'Resilience and overcoming difficulties', msg: 'We are troubled on every side, yet not distressed; we are perplexed, but not in despair.', type: 'scripture', ref: '2 Corinthians 4:8' },
-
-          // Rest and self-compassion
-          { cat: 'Rest and self-compassion', msg: 'Rest is not a reward for exhaustion. It is part of being human.', type: 'original', ref: null },
-          { cat: 'Rest and self-compassion', msg: 'You can be ambitious and still choose peace.', type: 'original', ref: null },
-          { cat: 'Rest and self-compassion', msg: 'Taking a pause is not quitting; it is making space to breathe and realign.', type: 'original', ref: null },
-          { cat: 'Rest and self-compassion', msg: 'Come unto me, all ye that labour and are heavy laden, and I will give you rest.', type: 'scripture', ref: 'Matthew 11:28' },
-          { cat: 'Rest and self-compassion', msg: 'In returning and rest shall ye be saved; in quietness and in confidence shall be your strength.', type: 'scripture', ref: 'Isaiah 30:15' },
-
-          // Discipline and consistency
-          { cat: 'Discipline and consistency', msg: 'Small, quiet daily efforts compound into extraordinary transformations.', type: 'original', ref: null },
-          { cat: 'Discipline and consistency', msg: 'Discipline is simply remembering what you truly want when the moment gets noisy.', type: 'original', ref: null },
-          { cat: 'Discipline and consistency', msg: 'Commit your work to the LORD, and your plans will be established.', type: 'scripture', ref: 'Proverbs 16:3' },
-          { cat: 'Discipline and consistency', msg: 'Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up.', type: 'scripture', ref: 'Galatians 6:9' },
-
-          // Gratitude and appreciation
-          { cat: 'Gratitude and appreciation', msg: 'Do not become so focused on your future that you forget to enjoy your present.', type: 'original', ref: null },
-          { cat: 'Gratitude and appreciation', msg: 'Look around you today: there is something ordinary that is actually a gift.', type: 'original', ref: null },
-          { cat: 'Gratitude and appreciation', msg: 'This is the day which the LORD hath made; we will rejoice and be glad in it.', type: 'scripture', ref: 'Psalm 118:24' },
-          { cat: 'Gratitude and appreciation', msg: 'Give thanks in all circumstances; for this is God’s will for you in Christ Jesus.', type: 'scripture', ref: '1 Thessalonians 5:18' },
-
-          // Hope and new beginnings
-          { cat: 'Hope and new beginnings', msg: 'Every morning is a clean canvas. What happened yesterday does not have to dictate today.', type: 'original', ref: null },
-          { cat: 'Hope and new beginnings', msg: 'Hope is believing that tomorrow holds goodness, even when today is unclear.', type: 'original', ref: null },
-          { cat: 'Hope and new beginnings', msg: 'The steadfast love of the LORD never ceases; his mercies never come to an end; they are new every morning: great is thy faithfulness.', type: 'scripture', ref: 'Lamentations 3:22-23' },
-          { cat: 'Hope and new beginnings', msg: 'For I know the plans I have for you, declares the LORD, plans to prosper you and not to harm you, plans to give you hope and a future.', type: 'scripture', ref: 'Jeremiah 29:11' },
-
-          // Relationships and kindness
-          { cat: 'Relationships and kindness', msg: 'A quiet word of appreciation can lighten someone’s entire week.', type: 'original', ref: null },
-          { cat: 'Relationships and kindness', msg: 'You do not have to carry everything alone. Let those who care for you share the weight.', type: 'original', ref: null },
-          { cat: 'Relationships and kindness', msg: 'Be kind and compassionate to one another, forgiving each other, just as in Christ God forgave you.', type: 'scripture', ref: 'Ephesians 4:32' },
-          { cat: 'Relationships and kindness', msg: 'As iron sharpens iron, so one person sharpens another.', type: 'scripture', ref: 'Proverbs 27:17' }
-        ]
-
+      const existingMsgs = db.prepare('SELECT id, message, is_favorite FROM selah_moments_messages').all() as Array<{ id: number; message: string; is_favorite: number }>
+      if (existingMsgs.length > 5) {
+        const favMap = new Map<string, number>()
+        for (const row of existingMsgs) {
+          if (row.is_favorite) favMap.set(row.message, 1)
+        }
+        db.prepare('DELETE FROM selah_moments_messages').run()
         const insertMsg = db.prepare(`
-          INSERT INTO selah_moments_messages (category, message, source_type, scripture_ref)
-          VALUES (?, ?, ?, ?)
+          INSERT INTO selah_moments_messages (category, message, source_type, scripture_ref, is_favorite)
+          VALUES (?, ?, ?, ?, ?)
         `)
-        for (const m of seedMessages) {
+        for (const m of selectedMomentsSeed) {
+          insertMsg.run(m.cat, m.msg, m.type, m.ref, favMap.get(m.msg) ? 1 : 0)
+        }
+      } else if (existingMsgs.length === 0) {
+        const insertMsg = db.prepare(`
+          INSERT INTO selah_moments_messages (category, message, source_type, scripture_ref, is_favorite)
+          VALUES (?, ?, ?, ?, 0)
+        `)
+        for (const m of selectedMomentsSeed) {
           insertMsg.run(m.cat, m.msg, m.type, m.ref)
         }
       }

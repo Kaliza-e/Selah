@@ -3,25 +3,58 @@ import {
   Heart,
   Copy,
   Check,
-  RefreshCw,
-  BookOpen,
-  Filter,
-  Sparkles,
-  Quote
+  ChevronLeft,
+  ChevronRight,
+  BookOpen
 } from 'lucide-react'
-import { SelahMessage, SelahCategory } from '../../types'
+import { SelahMessage } from '../../types'
 
-const CATEGORIES: Array<'All' | SelahCategory> = [
-  'All',
-  'Self-worth and confidence',
-  'Faith and spirituality',
-  'Patience and personal growth',
-  'Resilience and overcoming difficulties',
-  'Rest and self-compassion',
-  'Discipline and consistency',
-  'Gratitude and appreciation',
-  'Hope and new beginnings',
-  'Relationships and kindness'
+const FIVE_DEFAULT_VERSES: SelahMessage[] = [
+  {
+    id: 1,
+    category: 'Self-worth and confidence',
+    message: 'Your worth is not determined by how much you accomplish.',
+    source_type: 'original',
+    scripture_ref: null,
+    is_favorite: 0,
+    created_at: '2026-01-01T00:00:00.000Z'
+  },
+  {
+    id: 2,
+    category: 'Rest and self-compassion',
+    message: 'Come to me, all who labor and are heavy laden, and I will give you rest.',
+    source_type: 'scripture',
+    scripture_ref: 'Matthew 11:28',
+    is_favorite: 0,
+    created_at: '2026-01-01T00:00:00.000Z'
+  },
+  {
+    id: 3,
+    category: 'Resilience and overcoming difficulties',
+    message: 'My grace is sufficient for you, for my power is made perfect in weakness.',
+    source_type: 'scripture',
+    scripture_ref: '2 Corinthians 12:9',
+    is_favorite: 0,
+    created_at: '2026-01-01T00:00:00.000Z'
+  },
+  {
+    id: 4,
+    category: 'Faith and spirituality',
+    message: 'Be still, and know that I am God.',
+    source_type: 'scripture',
+    scripture_ref: 'Psalm 46:10',
+    is_favorite: 0,
+    created_at: '2026-01-01T00:00:00.000Z'
+  },
+  {
+    id: 5,
+    category: 'Hope and new beginnings',
+    message: 'For I know the plans I have for you, plans to give you hope and a future.',
+    source_type: 'scripture',
+    scripture_ref: 'Jeremiah 29:11',
+    is_favorite: 0,
+    created_at: '2026-01-01T00:00:00.000Z'
+  }
 ]
 
 interface WordsForSoulSectionProps {
@@ -29,255 +62,164 @@ interface WordsForSoulSectionProps {
 }
 
 export function WordsForSoulSection({ onShowMessage }: WordsForSoulSectionProps) {
-  const [messages, setMessages] = useState<SelahMessage[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<'All' | SelahCategory>('All')
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
-  const [featuredIndex, setFeaturedIndex] = useState(0)
-  const [copiedId, setCopiedId] = useState<number | null>(null)
-  const [isRotating, setIsRotating] = useState(false)
+  const [messages, setMessages] = useState<SelahMessage[]>(FIVE_DEFAULT_VERSES)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [copied, setCopied] = useState(false)
 
   const loadMessages = useCallback(async () => {
     try {
       const api = window.hello11824
-      if (!api) return
-      const list = await api.listMomentsMessages(
-        selectedCategory === 'All' ? undefined : selectedCategory,
-        showFavoritesOnly
-      )
-      setMessages(list || [])
-      setFeaturedIndex(0)
+      if (!api?.listMomentsMessages) return
+      const list = await api.listMomentsMessages()
+      if (list && list.length > 0) {
+        // Keep exactly 5 verses
+        setMessages(list.slice(0, 5))
+      }
     } catch (err) {
       console.error('Failed to load words for soul:', err)
     }
-  }, [selectedCategory, showFavoritesOnly])
+  }, [])
 
   useEffect(() => {
     loadMessages()
   }, [loadMessages])
 
-  const featuredMessage = useMemo(() => {
-    if (messages.length === 0) return null
-    return messages[featuredIndex % messages.length]
-  }, [messages, featuredIndex])
+  const currentVerse = useMemo(() => {
+    if (messages.length === 0) return FIVE_DEFAULT_VERSES[0]
+    return messages[currentIndex % messages.length]
+  }, [messages, currentIndex])
 
-  const handleNextWord = () => {
-    if (messages.length <= 1) return
-    setIsRotating(true)
-    setFeaturedIndex(prev => (prev + 1) % messages.length)
-    setTimeout(() => setIsRotating(false), 300)
+  const handlePrev = () => {
+    setCurrentIndex(prev => (prev - 1 + messages.length) % messages.length)
   }
 
-  const handleToggleFavorite = async (id: number) => {
+  const handleNext = () => {
+    setCurrentIndex(prev => (prev + 1) % messages.length)
+  }
+
+  const handleToggleFavorite = async () => {
+    const id = currentVerse.id
     try {
-      const isFav = await window.hello11824?.toggleMomentsMessageFavorite(id)
+      let isFav = false
+      if (window.hello11824?.toggleMomentsMessageFavorite) {
+        isFav = await window.hello11824.toggleMomentsMessageFavorite(id)
+      } else {
+        isFav = !currentVerse.is_favorite
+      }
       setMessages(prev =>
         prev.map(m => (m.id === id ? { ...m, is_favorite: isFav ? 1 : 0 } : m))
       )
-      onShowMessage?.(isFav ? 'Added to favourites.' : 'Removed from favourites.')
+      onShowMessage?.(isFav ? 'Saved to favourites.' : 'Removed from favourites.')
     } catch {
       // ignore
     }
   }
 
-  const handleCopy = async (msg: SelahMessage) => {
+  const handleCopy = async () => {
     try {
-      const textToCopy = msg.source_type === 'scripture' && msg.scripture_ref
-        ? `"${msg.message}" — ${msg.scripture_ref}`
-        : `"${msg.message}"`
+      const textToCopy =
+        currentVerse.source_type === 'scripture' && currentVerse.scripture_ref
+          ? `"${currentVerse.message}" — ${currentVerse.scripture_ref}`
+          : `"${currentVerse.message}"`
       await navigator.clipboard.writeText(textToCopy)
-      setCopiedId(msg.id)
+      setCopied(true)
       onShowMessage?.('Copied to clipboard.')
-      setTimeout(() => setCopiedId(null), 2000)
+      setTimeout(() => setCopied(false), 2000)
     } catch {
       onShowMessage?.('Could not copy to clipboard.')
     }
   }
 
   return (
-    <div className="words-for-soul-container">
-      {/* Category Filter Pills & Favourites Toggle */}
-      <div className="moments-filter-bar">
-        <div className="moments-category-scroll">
-          {CATEGORIES.map(cat => (
+    <div className="words-single-card-wrapper">
+      <div className="moments-single-verse-card">
+        {/* Card Header: Category & Optional Scripture Reference */}
+        <div className="moments-single-card-header">
+          <span className="moments-category-label">{currentVerse.category}</span>
+          {currentVerse.source_type === 'scripture' && currentVerse.scripture_ref && (
+            <span className="moments-scripture-pill">
+              <BookOpen size={11} />
+              <span>{currentVerse.scripture_ref}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Centered Verse Text */}
+        <div className="moments-single-verse-body">
+          <p className="moments-single-verse-text">
+            &ldquo;{currentVerse.message}&rdquo;
+          </p>
+        </div>
+
+        {/* Bottom Controls Row: Prev/Next, 5 Dots, Copy, Save */}
+        <div className="moments-single-card-controls">
+          <div className="moments-nav-controls">
             <button
-              key={cat}
               type="button"
-              className={`moments-category-pill ${selectedCategory === cat && !showFavoritesOnly ? 'active' : ''}`}
-              onClick={() => {
-                setShowFavoritesOnly(false)
-                setSelectedCategory(cat)
-              }}
+              className="moments-card-btn nav-btn"
+              onClick={handlePrev}
+              aria-label="Previous verse"
             >
-              {cat}
+              <ChevronLeft size={14} />
+              <span>Previous</span>
             </button>
-          ))}
-        </div>
 
-        <button
-          type="button"
-          className={`moments-fav-toggle-btn ${showFavoritesOnly ? 'active' : ''}`}
-          onClick={() => setShowFavoritesOnly(prev => !prev)}
-          title="View saved favourite words"
-        >
-          <Heart size={14} fill={showFavoritesOnly ? 'currentColor' : 'none'} />
-          <span>Favourites</span>
-        </button>
-      </div>
+            {/* 5 Progress Dots */}
+            <div className="moments-dot-indicators" role="tablist" aria-label="Verse pagination">
+              {messages.map((item, idx) => (
+                <button
+                  key={item.id || idx}
+                  type="button"
+                  role="tab"
+                  aria-selected={idx === currentIndex}
+                  aria-label={`Go to verse ${idx + 1}`}
+                  className={`moments-page-dot ${idx === currentIndex ? 'active' : ''}`}
+                  onClick={() => setCurrentIndex(idx)}
+                />
+              ))}
+            </div>
 
-      {/* Featured Quote Hero Showcase */}
-      {featuredMessage ? (
-        <div className="moments-featured-hero-card">
-          <div className="moments-hero-quote-mark">
-            <Quote size={32} />
+            <button
+              type="button"
+              className="moments-card-btn nav-btn"
+              onClick={handleNext}
+              aria-label="Next verse"
+            >
+              <span>Next</span>
+              <ChevronRight size={14} />
+            </button>
           </div>
 
-          <div className="moments-hero-top-row">
-            <span className="moments-hero-badge">
-              <Sparkles size={12} />
-              <span>FEATURED WORD</span>
-            </span>
-
-            <div className="moments-hero-meta">
-              <span className="moments-hero-category">{featuredMessage.category}</span>
-              {featuredMessage.source_type === 'scripture' && featuredMessage.scripture_ref && (
-                <span className="moments-hero-scripture-ref">
-                  <BookOpen size={11} />
-                  <span>{featuredMessage.scripture_ref}</span>
-                </span>
+          <div className="moments-action-controls">
+            <button
+              type="button"
+              className="moments-card-btn"
+              onClick={handleCopy}
+              title="Copy verse to clipboard"
+            >
+              {copied ? (
+                <Check size={12} color="var(--accent-green, #10b981)" />
+              ) : (
+                <Copy size={12} />
               )}
-            </div>
-          </div>
+              <span>{copied ? 'Copied' : 'Copy'}</span>
+            </button>
 
-          <div className="moments-hero-body">
-            <p className="moments-hero-quote-text">
-              &ldquo;{featuredMessage.message}&rdquo;
-            </p>
-          </div>
-
-          <div className="moments-hero-footer">
-            <div className="moments-hero-actions-left">
-              <button
-                type="button"
-                className="btn-secondary-pill moments-hero-btn"
-                onClick={handleNextWord}
-                title="Discover another word"
-              >
-                <RefreshCw size={13} className={isRotating ? 'spin-anim' : ''} />
-                <span>Discover Another</span>
-              </button>
-            </div>
-
-            <div className="moments-hero-actions-right">
-              <button
-                type="button"
-                className="btn-secondary-pill moments-hero-btn"
-                onClick={() => handleCopy(featuredMessage)}
-                title="Copy to clipboard"
-              >
-                {copiedId === featuredMessage.id ? <Check size={13} color="var(--accent-green, #10b981)" /> : <Copy size={13} />}
-                <span>{copiedId === featuredMessage.id ? 'Copied' : 'Copy'}</span>
-              </button>
-
-              <button
-                type="button"
-                className={`btn-secondary-pill moments-hero-btn ${featuredMessage.is_favorite ? 'fav-active' : ''}`}
-                onClick={() => handleToggleFavorite(featuredMessage.id)}
-                title={featuredMessage.is_favorite ? 'Remove from favourites' : 'Save to favourites'}
-              >
-                <Heart size={13} fill={featuredMessage.is_favorite ? 'currentColor' : 'none'} />
-                <span>{featuredMessage.is_favorite ? 'Saved' : 'Save'}</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              className={`moments-card-btn ${currentVerse.is_favorite ? 'saved-active' : ''}`}
+              onClick={handleToggleFavorite}
+              title={currentVerse.is_favorite ? 'Remove from saved' : 'Save to favourites'}
+            >
+              <Heart
+                size={12}
+                fill={currentVerse.is_favorite ? 'currentColor' : 'none'}
+              />
+              <span>{currentVerse.is_favorite ? 'Saved' : 'Save'}</span>
+            </button>
           </div>
         </div>
-      ) : showFavoritesOnly ? (
-        <div className="moments-empty-card">
-          <Heart size={28} className="moments-empty-icon" />
-          <h4 className="moments-empty-title">No favourites yet</h4>
-          <p className="moments-empty-desc">
-            Save the words that speak to you. They'll be waiting here whenever you need them.
-          </p>
-          <button
-            type="button"
-            className="btn-secondary-pill"
-            onClick={() => setShowFavoritesOnly(false)}
-          >
-            Browse all encouraging words
-          </button>
-        </div>
-      ) : (
-        <div className="moments-empty-card">
-          <Sparkles size={28} className="moments-empty-icon" />
-          <h4 className="moments-empty-title">No words found in this category</h4>
-          <p className="moments-empty-desc">
-            Explore other categories or switch back to All.
-          </p>
-          <button
-            type="button"
-            className="btn-secondary-pill"
-            onClick={() => setSelectedCategory('All')}
-          >
-            Show All Words
-          </button>
-        </div>
-      )}
-
-      {/* Grid of Browsable Cards */}
-      {messages.length > 1 && (
-        <div className="moments-words-grid-section">
-          <div className="moments-section-subhead">
-            <span className="moments-subhead-title">
-              {showFavoritesOnly ? 'Your Favourite Words' : `All Words in ${selectedCategory}`}
-            </span>
-            <span className="moments-count-badge">{messages.length}</span>
-          </div>
-
-          <div className="moments-words-grid">
-            {messages.map((item, idx) => (
-              <div
-                key={item.id}
-                className={`moments-word-card ${item.id === featuredMessage?.id ? 'active-featured' : ''}`}
-                onClick={() => setFeaturedIndex(idx)}
-              >
-                <div className="moments-card-header">
-                  <span className="moments-card-category">{item.category}</span>
-                  <div className="moments-card-actions" onClick={e => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      className="moments-mini-action-btn"
-                      onClick={() => handleCopy(item)}
-                      title="Copy"
-                    >
-                      {copiedId === item.id ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
-                    </button>
-                    <button
-                      type="button"
-                      className={`moments-mini-action-btn ${item.is_favorite ? 'fav-active' : ''}`}
-                      onClick={() => handleToggleFavorite(item.id)}
-                      title="Toggle favourite"
-                    >
-                      <Heart size={12} fill={item.is_favorite ? 'currentColor' : 'none'} />
-                    </button>
-                  </div>
-                </div>
-
-                <p className="moments-card-quote">
-                  &ldquo;{item.message}&rdquo;
-                </p>
-
-                {item.source_type === 'scripture' && item.scripture_ref && (
-                  <div className="moments-card-footer">
-                    <span className="moments-scripture-ref-pill">
-                      <BookOpen size={10} />
-                      <span>{item.scripture_ref}</span>
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   )
 }

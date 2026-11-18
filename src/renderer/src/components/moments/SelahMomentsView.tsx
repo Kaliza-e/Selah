@@ -4,7 +4,6 @@ import { MomentsRhythmBanner } from './MomentsRhythmBanner'
 import { WordsForSoulSection } from './WordsForSoulSection'
 import { WeeklyReflectionsSection } from './WeeklyReflectionsSection'
 import { LittleRemindersSection } from './LittleRemindersSection'
-import { ActiveTab } from '../../types'
 
 type MomentsTab = 'words' | 'reflections' | 'reminders'
 
@@ -23,17 +22,11 @@ export function SelahMomentsView({
 
   return (
     <div className="selah-moments-view-container">
-      {/* Page Header */}
-      <div className="moments-view-header">
-        <div className="moments-view-title-group">
-          <div className="moments-brand-pill">
-            <Sparkles size={12} className="moments-sparkle-spin" />
-            <span>SELAH MOMENTS</span>
-          </div>
-          <h2 className="moments-page-title">A Little Space to Pause</h2>
-          <p className="moments-page-subtitle">
-            Sometimes, the most productive thing you can do is pause, reflect, and reconnect with yourself.
-          </p>
+      {/* 1. Top Bar: small Selah Moments label and Back to Home button */}
+      <div className="moments-view-top-bar">
+        <div className="moments-brand-pill">
+          <Sparkles size={12} className="moments-sparkle-spin" />
+          <span>SELAH MOMENTS</span>
         </div>
 
         {onNavigateHome && (
@@ -42,16 +35,19 @@ export function SelahMomentsView({
             className="btn-secondary-pill moments-back-btn"
             onClick={onNavigateHome}
           >
-            <ArrowLeft size={13} />
+            <ArrowLeft size={12} />
             <span>Back to Home</span>
           </button>
         )}
       </div>
 
-      {/* Gentle Weekly Rhythm Banner */}
+      {/* 2. One short heading with no long subtitle */}
+      <h1 className="moments-page-heading">Pause for a moment</h1>
+
+      {/* 3. One short line for the day/mood banner with no extra description text */}
       <MomentsRhythmBanner onOpenSection={setActiveSubTab} />
 
-      {/* Navigation Sub-Tabs */}
+      {/* Visually Lighter Tabs */}
       <div className="moments-tab-bar" role="tablist" aria-label="Selah Moments Sections">
         <button
           type="button"
@@ -60,7 +56,7 @@ export function SelahMomentsView({
           className={`moments-tab-item ${activeSubTab === 'words' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('words')}
         >
-          <Heart size={14} />
+          <Heart size={13} />
           <span>Words for the Soul</span>
         </button>
 
@@ -71,7 +67,7 @@ export function SelahMomentsView({
           className={`moments-tab-item ${activeSubTab === 'reflections' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('reflections')}
         >
-          <PenTool size={14} />
+          <PenTool size={13} />
           <span>Weekly Reflections</span>
         </button>
 
@@ -82,7 +78,7 @@ export function SelahMomentsView({
           className={`moments-tab-item ${activeSubTab === 'reminders' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('reminders')}
         >
-          <Bookmark size={14} />
+          <Bookmark size={13} />
           <span>My Little Reminders</span>
         </button>
       </div>
